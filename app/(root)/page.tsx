@@ -15,7 +15,7 @@ const Home = () => {
           subtext = "Access and manage your account and transactions efficiently."
           />
         </header>
-        <TotalBalanceBox 
+        <TotalBalanceBox  
         accounts={[]}
         totalBanks={1}
         totalCurrentBalance={1250}

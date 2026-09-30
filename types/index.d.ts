@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 
 declare type SearchParamProps = {
   params: { [key: string]: string };
@@ -193,7 +192,7 @@ declare interface AuthFormProps {
 
 declare interface BankDropdownProps {
   accounts: Account[];
-  setValue?: UseFormSetValue<any>;
+  setValue?: UseFormSetValue<FieldValues>;
   otherStyles?: string;
 }
 
@@ -202,7 +201,7 @@ declare interface BankTabItemProps {
   appwriteItemId?: string;
 }
 
-declare interface TotlaBalanceBoxProps {
+declare interface TotalBalanceBoxProps {
   accounts: Account[];
   totalBanks: number;
   totalCurrentBalance: number;
@@ -218,8 +217,8 @@ declare interface RightSidebarProps {
   banks: Bank[] & Account[];
 }
 
-declare interface SiderbarProps {
-  user: User;
+declare interface SidebarProps {
+  user: Pick<User, "firstName" | "lastName">;
 }
 
 declare interface RecentTransactionsProps {
