@@ -193,15 +193,26 @@ export const getTransactionStatus = (date: Date) => {
   return date > twoDaysAgo ? "Processing" : "Success";
 };
 
+// True for a real calendar date (YYYY-MM-DD) that is not in the future
+const isValidPastDate = (value: string) => {
+  const date = new Date(`${value}T00:00:00Z`);
+
+  return !isNaN(date.getTime())
+    && date.toISOString().slice(0, 10) === value
+    && date <= new Date();
+};
+
 export const authFormSchema = (type: string) => z.object({
   // sign up
   firstName: type === 'sign-in' ? z.string().optional() : z.string().min(3),
   lastName: type === 'sign-in' ? z.string().optional() : z.string().min(3),
-  address1: type === 'sign-in' ? z.string().optional() : z.string().max(50),
-  city: type === 'sign-in' ? z.string().optional() : z.string().max(50),
+  address1: type === 'sign-in' ? z.string().optional() : z.string().trim().min(1, 'Address is required').max(50),
+  city: type === 'sign-in' ? z.string().optional() : z.string().trim().min(1, 'City is required').max(50),
   state: type === 'sign-in' ? z.string().optional() : z.string().min(2).max(2),
   postalCode: type === 'sign-in' ? z.string().optional() : z.string().min(3).max(6),
-  dateOfBirth: type === 'sign-in' ? z.string().optional() : z.string().min(3),
+  dateOfBirth: type === 'sign-in' ? z.string().optional() : z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use the format YYYY-MM-DD')
+    .refine(isValidPastDate, 'Enter a real date in the past'),
   ssn: type === 'sign-in' ? z.string().optional() : z.string().min(3),
   // both
   email: z.string().email(),

@@ -2,6 +2,7 @@
 import {
     Sheet, 
     SheetContent,
+    SheetDescription,
     SheetHeader,
     SheetTitle,
     SheetTrigger
@@ -13,6 +14,13 @@ const MobileNav = ({user} : MobileNavProps) => {
     return (
         <section>
             <Sheet>
+                <SheetTrigger>Open</SheetTrigger>
+                <SheetContent>
+                    <SheetHeader>
+                        <SheetTitle>Are you absolutely sure?</SheetTitle>
+                        <SheetDescription />
+                    </SheetHeader>
+                </SheetContent>
             </Sheet>
         </section>
     )

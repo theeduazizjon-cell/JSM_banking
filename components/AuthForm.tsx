@@ -28,6 +28,7 @@ const AuthForm = ({ type }: { type: string }) => {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const formSchema = authFormSchema(type);
 
@@ -35,14 +36,23 @@ const AuthForm = ({ type }: { type: string }) => {
     const form = useForm<z.infer<typeof formSchema>>({
       resolver: zodResolver(formSchema),
       defaultValues: {
+        firstName: '',
+        lastName: '',
+        address1: '',
+        city: '',
+        state: '',
+        postalCode: '',
+        dateOfBirth: '',
+        ssn: '',
         email: "",
         password: ''
       },
     })
-   
+
     // 2. Define a submit handler.
     const onSubmit = async (data: z.infer<typeof formSchema>) => {
       setIsLoading(true);
+      setSubmitError(null);
 
       try {
         // Sign up with Appwrite & create plaid token
@@ -50,7 +60,8 @@ const AuthForm = ({ type }: { type: string }) => {
         if(type === 'sign-up') {
           const newUser = await signUp(data);
 
-          setUser(newUser);
+          if(newUser) setUser(newUser)
+          else setSubmitError('Sign up failed. Please check your details and try again.')
         }
 
         if(type === 'sign-in') {
@@ -60,9 +71,11 @@ const AuthForm = ({ type }: { type: string }) => {
           })
 
           if(response) router.push('/')
+          else setSubmitError('Sign in failed. Please check your email and password.')
         }
       } catch (error) {
         console.log(error);
+        setSubmitError('Something went wrong. Please try again.');
       } finally {
         setIsLoading(false);
       }
@@ -110,7 +123,7 @@ const AuthForm = ({ type }: { type: string }) => {
                 <>
                   <div className="flex gap-4">
                     <CustomInput control={form.control} name='firstName' label="First Name" placeholder='Enter your first name' />
-                    <CustomInput control={form.control} name='lastName' label="Last Name" placeholder='Enter your first name' />
+                    <CustomInput control={form.control} name='lastName' label="Last Name" placeholder='Enter your last name' />
                   </div>
                   <CustomInput control={form.control} name='address1' label="Address" placeholder='Enter your specific address' />
                   <CustomInput control={form.control} name='city' label="City" placeholder='Enter your city' />
@@ -130,6 +143,9 @@ const AuthForm = ({ type }: { type: string }) => {
               <CustomInput control={form.control} name='password' label="Password" placeholder='Enter your password' />
 
               <div className="flex flex-col gap-4">
+                {submitError && (
+                  <p role="alert" className="form-message">{submitError}</p>
+                )}
                 <Button type="submit" disabled={isLoading} className="form-btn">
                   {isLoading ? (
                     <>
