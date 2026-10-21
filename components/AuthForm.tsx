@@ -60,7 +60,8 @@ const AuthForm = ({ type }: { type: string }) => {
         if(type === 'sign-up') {
           const newUser = await signUp(data);
 
-          if(newUser) setUser(newUser)
+          if(newUser?.error) setSubmitError(newUser.error)
+          else if(newUser) setUser(newUser)
           else setSubmitError('Sign up failed. Please check your details and try again.')
         }
 
@@ -70,7 +71,8 @@ const AuthForm = ({ type }: { type: string }) => {
             password: data.password,
           })
 
-          if(response) router.push('/')
+          if(response?.error) setSubmitError(response.error)
+          else if(response) router.push('/')
           else setSubmitError('Sign in failed. Please check your email and password.')
         }
       } catch (error) {

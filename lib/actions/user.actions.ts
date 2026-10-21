@@ -6,6 +6,16 @@ import { cookies } from "next/headers";
 import { unstable_rethrow } from "next/navigation";
 import { parseStringify } from "../utils";
 
+// Server action errors are swallowed before reaching the client,
+// so return a readable message for the form to display instead.
+const getErrorMessage = (error: unknown) => {
+  if (!process.env.NEXT_PUBLIC_APPWRITE_PROJECT || !process.env.NEXT_APPWRITE_KEY) {
+    return 'Appwrite is not configured. Add your project ID and API key to .env.local and restart the dev server.';
+  }
+
+  return error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+}
+
 const setSessionCookie = async (secret: string) => {
   (await cookies()).set("appwrite-session", secret, {
     path: "/",
@@ -26,6 +36,7 @@ export const signIn = async ({ email, password }: signInProps) => {
     return parseStringify(response);
   } catch (error) {
     console.error('Error', error);
+    return { error: getErrorMessage(error) };
   }
 }
 
@@ -49,6 +60,7 @@ export const signUp = async (userData: SignUpParams) => {
     return parseStringify(newUserAccount);
   } catch (error) {
     console.error('Error', error);
+    return { error: getErrorMessage(error) };
   }
 }
 
