@@ -1,14 +1,29 @@
 import HeaderBox from '@/components/HeaderBox';
 import RightSidebar from '@/components/RightSidebar';
 import TotalBalanceBox from '@/components/TotalBalanceBox';
+import { getAccount, getAccounts } from '@/lib/actions/bank.actions';
 import { getLoggedInUser } from '@/lib/actions/user.actions';
 import { redirect } from 'next/navigation';
 import React from 'react'
 
-const Home = async () => {
+// Next 16 passes searchParams as a Promise
+const Home = async ({ searchParams }: { searchParams: Promise<SearchParamProps['searchParams']> }) => {
+  const { id, page } = await searchParams;
   const loggedIn = await getLoggedInUser();
 
   if (!loggedIn) redirect('/sign-in')
+
+  const accounts = await getAccounts({
+    userId: loggedIn.$id
+  })
+
+  if(!accounts) return;
+
+  const accountsData = accounts?.data;
+  const appwriteItemId = (id as string) || accountsData[0]?.appwriteItemId;
+
+  // A user with no linked banks has no account to look up yet
+  const account = appwriteItemId ? await getAccount({ appwriteItemId }) : undefined;
 
   return (
     <section className="home">
@@ -22,16 +37,16 @@ const Home = async () => {
           />
         </header>
         <TotalBalanceBox  
-        accounts={[]}
-        totalBanks={1}
-        totalCurrentBalance={1250}
+        accounts={accountsData}
+        totalBanks={accounts?.totalBanks}
+        totalCurrentBalance={accounts?.totalCurrentBalance}
         />
       </div>
 
       <RightSidebar
         user={loggedIn}
-        transactions={[]}
-        banks={[{ currentBalance: 123.50 }, { currentBalance: 500.50 }] as React.ComponentProps<typeof RightSidebar>["banks"]}
+        transactions={account?.transactions}
+        banks={accountsData?.slice(0, 2)}
       />
     </section>
   )
