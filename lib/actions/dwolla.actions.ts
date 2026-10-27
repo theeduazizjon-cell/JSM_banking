@@ -11,16 +11,31 @@ const getEnvironment = (): "production" | "sandbox" => {
     case "production":
       return "production";
     default:
+      // Never fall back to a default here: dwolla-v2 defaults to production.
       throw new Error(
-        "Dwolla environment should either be set to `sandbox` or `production`"
+        `DWOLLA_ENV must be set to \`sandbox\` or \`production\` (received: ${
+          environment ? `"${environment}"` : "nothing"
+        }). Add DWOLLA_ENV=sandbox to .env.local for local development and restart the dev server.`
       );
   }
 };
 
+const getRequiredEnv = (name: "DWOLLA_KEY" | "DWOLLA_SECRET"): string => {
+  const value = process.env[name];
+
+  if (!value) {
+    throw new Error(
+      `${name} is not set. Add your Dwolla sandbox ${name} to .env.local and restart the dev server.`
+    );
+  }
+
+  return value;
+};
+
 const dwollaClient = new Client({
   environment: getEnvironment(),
-  key: process.env.DWOLLA_KEY as string,
-  secret: process.env.DWOLLA_SECRET as string,
+  key: getRequiredEnv("DWOLLA_KEY"),
+  secret: getRequiredEnv("DWOLLA_SECRET"),
 });
 
 // Create a Dwolla Funding Source using a Plaid Processor Token
