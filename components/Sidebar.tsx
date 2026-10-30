@@ -7,6 +7,7 @@ import { sidebarLinks } from '@/constants';
 import { cn } from '@/lib/utils';
 import { usePathname } from 'next/navigation';
 import Footer from './Footer';
+import PlaidLink from './PlaidLink';
 
 
 const Sidebar = ({ user }: SidebarProps) => {
@@ -44,7 +45,7 @@ const Sidebar = ({ user }: SidebarProps) => {
                             alt={item.label}
                             fill
                             className={cn({
-                                'brightness-0': isActive,
+                                'brightness-[3] invert-0': isActive,
                             })}
                             />   
                         </div>
@@ -54,7 +55,7 @@ const Sidebar = ({ user }: SidebarProps) => {
                     </Link>
                 )
             })}
-            User
+            <PlaidLink user={user} />
         </nav>
 
 

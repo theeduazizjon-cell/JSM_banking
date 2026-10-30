@@ -32,18 +32,26 @@ const getRequiredEnv = (name: "DWOLLA_KEY" | "DWOLLA_SECRET"): string => {
   return value;
 };
 
-const dwollaClient = new Client({
-  environment: getEnvironment(),
-  key: getRequiredEnv("DWOLLA_KEY"),
-  secret: getRequiredEnv("DWOLLA_SECRET"),
-});
+// Created on first use so pages that only import this module (e.g. via
+// user.actions) still render when Dwolla is not configured yet.
+let client: Client | undefined;
+
+const getDwollaClient = () => {
+  client ??= new Client({
+    environment: getEnvironment(),
+    key: getRequiredEnv("DWOLLA_KEY"),
+    secret: getRequiredEnv("DWOLLA_SECRET"),
+  });
+
+  return client;
+};
 
 // Create a Dwolla Funding Source using a Plaid Processor Token
 export const createFundingSource = async (
   options: CreateFundingSourceOptions
 ) => {
   try {
-    return await dwollaClient
+    return await getDwollaClient()
       .post(`customers/${options.customerId}/funding-sources`, {
         name: options.fundingSourceName,
         plaidToken: options.plaidToken,
@@ -56,7 +64,7 @@ export const createFundingSource = async (
 
 export const createOnDemandAuthorization = async () => {
   try {
-    const onDemandAuthorization = await dwollaClient.post(
+    const onDemandAuthorization = await getDwollaClient().post(
       "on-demand-authorizations"
     );
     const authLink = onDemandAuthorization.body._links;
@@ -70,11 +78,17 @@ export const createDwollaCustomer = async (
   newCustomer: NewDwollaCustomerParams
 ) => {
   try {
-    return await dwollaClient
+    return await getDwollaClient()
       .post("customers", newCustomer)
       .then((res) => res.headers.get("location"));
   } catch (err) {
     console.error("Creating a Dwolla Customer Failed: ", err);
+
+    // Pass Dwolla's validation messages (e.g. invalid state or SSN) on to the sign-up form
+    const body = (err as { body?: { message?: string; _embedded?: { errors?: { message: string }[] } } })?.body;
+    const details = body?._embedded?.errors?.map((e) => e.message).join(" ") || body?.message;
+
+    if (details) throw new Error(`Dwolla rejected these details: ${details}`);
   }
 };
 
@@ -98,7 +112,7 @@ export const createTransfer = async ({
         value: amount,
       },
     };
-    return await dwollaClient
+    return await getDwollaClient()
       .post("transfers", requestBody)
       .then((res) => res.headers.get("location"));
   } catch (err) {

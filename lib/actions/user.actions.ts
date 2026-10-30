@@ -17,11 +17,32 @@ const {
   APPWRITE_BANK_COLLECTION_ID: BANK_COLLECTION_ID,
 } = process.env;
 
+export const getUserInfo = async ({ userId }: getUserInfoProps) => {
+  try {
+    const { database } = await createAdminClient();
+
+    const user = await database.listDocuments(
+      DATABASE_ID!,
+      USER_COLLECTION_ID!,
+      [Query.equal('userId', [userId])]
+    )
+
+    return parseStringify(user.documents[0]);
+  } catch (error) {
+    console.log(error)
+  }
+}
+
 // Server action errors are swallowed before reaching the client,
 // so return a readable message for the form to display instead.
 const getErrorMessage = (error: unknown) => {
   if (!process.env.NEXT_PUBLIC_APPWRITE_PROJECT || !process.env.NEXT_APPWRITE_KEY) {
     return 'Appwrite is not configured. Add your project ID and API key to .env.local and restart the dev server.';
+  }
+
+  if (error instanceof Error && error.message === 'Error creating Dwolla customer'
+    && (!process.env.DWOLLA_KEY || !process.env.DWOLLA_SECRET)) {
+    return 'Dwolla is not configured. Add DWOLLA_KEY and DWOLLA_SECRET to .env.local and restart the dev server.';
   }
 
   return error instanceof Error ? error.message : 'Something went wrong. Please try again.';
@@ -39,12 +60,13 @@ const setSessionCookie = async (secret: string) => {
 export const signIn = async ({ email, password }: signInProps) => {
   try {
     const { account } = await createAdminClient();
+    const session = await account.createEmailPasswordSession(email, password);
 
-    const response = await account.createEmailPasswordSession(email, password);
+    await setSessionCookie(session.secret);
 
-    await setSessionCookie(response.secret);
+    const user = await getUserInfo({ userId: session.userId })
 
-    return parseStringify(response);
+    return parseStringify(user);
   } catch (error) {
     console.error('Error', error);
     return { error: getErrorMessage(error) };
@@ -96,6 +118,17 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
     return parseStringify(newUser);
   } catch (error) {
     console.error('Error', error);
+
+    // Remove the half-created login so the same email can sign up again
+    if (newUserAccount) {
+      try {
+        const { user } = await createAdminClient();
+        await user.delete(newUserAccount.$id);
+      } catch (cleanupError) {
+        console.error('Error removing incomplete user', cleanupError);
+      }
+    }
+
     return { error: getErrorMessage(error) };
   }
 }
@@ -103,8 +136,9 @@ export const signUp = async ({ password, ...userData }: SignUpParams) => {
 export async function getLoggedInUser() {
   try {
     const { account } = await createSessionClient();
+    const result = await account.get();
 
-    const user = await account.get();
+    const user = await getUserInfo({ userId: result.$id})
 
     return parseStringify(user);
   } catch (error) {
@@ -152,7 +186,7 @@ export const createBankAccount = async ({
   accountId,
   accessToken,
   fundingSourceUrl,
-  sharableId,
+  shareableId,
 }: createBankAccountProps) => {
   try {
     const { database } = await createAdminClient();
@@ -167,13 +201,13 @@ export const createBankAccount = async ({
         accountId,
         accessToken,
         fundingSourceUrl,
-        sharableId,
+        shareableId,
       }
     )
 
     return parseStringify(bankAccount);
   } catch (error) {
-
+    console.log(error);
   }
 }
 
@@ -217,14 +251,14 @@ export const exchangePublicToken = async ({
     // If the funding source URL is not created, throw an error
     if (!fundingSourceUrl) throw Error;
 
-    // Create a bank account using the user ID, item ID, account ID, access token, funding source URL, and sharable ID
+    // Create a bank account using the user ID, item ID, account ID, access token, funding source URL, and shareable ID
     await createBankAccount({
       userId: user.$id,
       bankId: itemId,
       accountId: accountData.account_id,
       accessToken,
       fundingSourceUrl,
-      sharableId: encryptId(accountData.account_id),
+      shareableId: encryptId(accountData.account_id),
     });
 
     // Revalidate the path to reflect the changes
@@ -264,6 +298,24 @@ export const getBank = async ({ documentId }: getBankProps) => {
       BANK_COLLECTION_ID!,
       [Query.equal('$id', [documentId])]
     )
+
+    return parseStringify(bank.documents[0]);
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+export const getBankByAccountId = async ({ accountId }: getBankByAccountIdProps) => {
+  try {
+    const { database } = await createAdminClient();
+
+    const bank = await database.listDocuments(
+      DATABASE_ID!,
+      BANK_COLLECTION_ID!,
+      [Query.equal('accountId', [accountId])]
+    )
+
+    if(bank.total !== 1) return null;
 
     return parseStringify(bank.documents[0]);
   } catch (error) {

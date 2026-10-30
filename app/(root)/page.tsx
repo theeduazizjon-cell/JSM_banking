@@ -1,4 +1,5 @@
 import HeaderBox from '@/components/HeaderBox';
+import RecentTransactions from '@/components/RecentTransactions';
 import RightSidebar from '@/components/RightSidebar';
 import TotalBalanceBox from '@/components/TotalBalanceBox';
 import { getAccount, getAccounts } from '@/lib/actions/bank.actions';
@@ -9,6 +10,7 @@ import React from 'react'
 // Next 16 passes searchParams as a Promise
 const Home = async ({ searchParams }: { searchParams: Promise<SearchParamProps['searchParams']> }) => {
   const { id, page } = await searchParams;
+  const currentPage = Number(page as string) || 1;
   const loggedIn = await getLoggedInUser();
 
   if (!loggedIn) redirect('/sign-in')
@@ -32,14 +34,21 @@ const Home = async ({ searchParams }: { searchParams: Promise<SearchParamProps['
           <HeaderBox 
           type="greeting"
           title="Welcome"
-          user={loggedIn?.name || 'Guest'}
+          user={loggedIn?.firstName || 'Guest'}
           subtext = "Access and manage your account and transactions efficiently."
           />
+          <TotalBalanceBox
+          accounts={accountsData}
+          totalBanks={accounts?.totalBanks}
+          totalCurrentBalance={accounts?.totalCurrentBalance}
+          />
         </header>
-        <TotalBalanceBox  
-        accounts={accountsData}
-        totalBanks={accounts?.totalBanks}
-        totalCurrentBalance={accounts?.totalCurrentBalance}
+
+        <RecentTransactions
+          accounts={accountsData}
+          transactions={account?.transactions}
+          appwriteItemId={appwriteItemId}
+          page={currentPage}
         />
       </div>
 
