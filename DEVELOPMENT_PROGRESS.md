@@ -91,7 +91,14 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 ### Not yet done
 - Screens with real bank data (cards, transaction table, doughnut chart, transfer form with the bank dropdown) are unreviewed. No bank can be linked until the Plaid Dwolla integration works.
 - A full dark theme (currently intentionally light-only).
-- Visual identity: the app still uses the tutorial's "Horizon" name, logo and auth illustration.
+
+## Rebrand to Ledgerly (2026-11-01)
+- New name **Ledgerly**, chosen by you; the blue palette is kept. Package name is now `ledgerly`. The folder and Git remote are unchanged.
+- New logo mark (`public/icons/logo.svg`, also the favicon): three ledger lines and a balance dot on the brand-blue tile.
+- The sign-in/sign-up illustration was a 780 KB embedded screenshot of the tutorial's dashboard, showing the course author's name. It is replaced by an HTML brand panel (`components/AuthBrandPanel.tsx`) with a tagline, a decorative balance card labelled as a sample, and what the app actually does.
+- Removed the unused tutorial assets `auth-image.svg` and `jsm.svg`.
+- Every "Horizon" reference was renamed. Page metadata now uses a title template (e.g. "My Banks · Ledgerly"), and the description says what the app does.
+- Not checked: whether "Ledgerly" is trademarked or already used by another product.
 
 ## Remaining issues
 

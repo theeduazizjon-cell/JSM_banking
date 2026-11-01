@@ -14,8 +14,11 @@ const ibmPlexSerif = IBM_Plex_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "Horizon: The Future of Innovation",
-  description: "Horizon is a modern banking platform for everyone.",
+  title: {
+    default: "Ledgerly",
+    template: "%s · Ledgerly",
+  },
+  description: "Ledgerly links your bank accounts, shows balances and transactions in one place, and sends transfers. Runs on Plaid and Dwolla sandboxes.",
   icons: {
     icon: "/icons/logo.svg",
   },

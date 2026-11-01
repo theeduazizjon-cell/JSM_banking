@@ -6,6 +6,9 @@ import { getAccount, getAccounts } from '@/lib/data/bank';
 import { requireUser } from '@/lib/data/user';
 import { formatAmount } from '@/lib/utils';
 import React from 'react'
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Transaction History' };
 
 // Next 16 passes searchParams as a Promise
 const TransactionHistory = async ({ searchParams }: { searchParams: Promise<SearchParamProps['searchParams']> }) => {

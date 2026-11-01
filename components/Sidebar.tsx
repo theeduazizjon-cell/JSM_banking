@@ -22,12 +22,12 @@ const Sidebar = ({ user }: SidebarProps) => {
                       src="/icons/logo.svg" 
                       width={34}
                       height={34} 
-                      alt= "Horizon logo"
+                      alt= "Ledgerly logo"
                       className = "size-[24px] max-xl:size-14"
             />
 
             <span className="sidebar-logo">
-                Horizon
+                Ledgerly
             </span>
             </Link>
 

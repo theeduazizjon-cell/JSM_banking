@@ -4,6 +4,9 @@ import PlaidLink from '@/components/PlaidLink';
 import { getAccounts } from '@/lib/data/bank';
 import { requireUser } from '@/lib/data/user';
 import React from 'react'
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'My Banks' };
 
 const MyBanks = async () => {
   const loggedIn = await requireUser();
@@ -18,7 +21,7 @@ const MyBanks = async () => {
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <HeaderBox
             title="My Bank Accounts"
-            subtext="Manage the bank accounts linked to Horizon."
+            subtext="Manage the bank accounts linked to Ledgerly."
           />
           <div className="w-full sm:w-auto">
             <PlaidLink variant="primary" />

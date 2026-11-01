@@ -4,6 +4,9 @@ import PaymentTransferForm from '@/components/PaymentTransferForm'
 import { getAccounts } from '@/lib/data/bank';
 import { requireUser } from '@/lib/data/user';
 import React from 'react'
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: 'Transfer Funds' };
 
 const Transfer = async () => {
   const loggedIn = await requireUser();
@@ -18,7 +21,7 @@ const Transfer = async () => {
     <section className="payment-transfer">
       <HeaderBox
         title="Payment Transfer"
-        subtext="Send money from one of your linked accounts to another Horizon account (Dwolla sandbox)."
+        subtext="Send money from one of your linked accounts to another Ledgerly account (Dwolla sandbox)."
       />
 
       <section className="size-full pt-5">

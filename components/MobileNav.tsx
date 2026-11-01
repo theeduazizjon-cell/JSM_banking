@@ -32,16 +32,16 @@ const MobileNav = ({ user }: MobileNavProps) => {
         <SheetContent side="left" className="border-none bg-white">
           {/* Base UI dialogs need a title/description for screen readers */}
           <SheetTitle className="sr-only">Navigation</SheetTitle>
-          <SheetDescription className="sr-only">Horizon navigation menu</SheetDescription>
+          <SheetDescription className="sr-only">Ledgerly navigation menu</SheetDescription>
 
           <Link href="/" className="cursor-pointer flex items-center gap-1 px-4 pt-4">
             <Image
               src="/icons/logo.svg"
               width={34}
               height={34}
-              alt="Horizon logo"
+              alt="Ledgerly logo"
             />
-            <span className="text-26 font-ibm-plex-serif font-bold text-black-1">Horizon</span>
+            <span className="text-26 font-ibm-plex-serif font-bold text-black-1">Ledgerly</span>
           </Link>
           <div className="mobilenav-sheet">
             <nav className="flex h-full flex-col gap-6 pt-16 text-white">

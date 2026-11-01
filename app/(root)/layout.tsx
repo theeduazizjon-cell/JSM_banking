@@ -17,7 +17,7 @@ export default async function RootLayout({
     <Sidebar user={user}/>
     <div className='flex size-full flex-col'>
       <div className="root-layout">
-        <Link href="/" aria-label="Horizon home">
+        <Link href="/" aria-label="Ledgerly home">
           <Image src='/icons/logo.svg' width={30} height={30} alt=""/>
         </Link>
         <div>
