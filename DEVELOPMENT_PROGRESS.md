@@ -9,7 +9,7 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 |---|---|
 | 1. Audit | ✅ Done (2026-11-01) |
 | 2. Tools and agents | ✅ Built-in tools are enough; only dev test packages needed (approved, not yet installed) |
-| 3. Error fixing and security | ✅ Code done; ⚠️ one Appwrite console step left (see Remaining) |
+| 3. Error fixing and security | ✅ Done; signed-in flows tested except bank linking and transfers (blocked by a Plaid dashboard setting) |
 | 4. UI/UX | ⏳ Not started |
 | 5. Banking features | ⏳ Not started |
 | 6. Architecture | 🟡 Partly done (data access layer introduced in Phase 3) |
@@ -54,15 +54,25 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 - Removed `console.log` of full account objects in `BankCard`; fixed relative image path in `BankDropdown`.
 - `.env.example` now documents every variable the code reads.
 
+### Found while testing signed-in flows (2026-11-01)
+- **The Plaid secret was written to server logs.** Plaid's SDK throws Axios errors that include the request headers, and the code logged them raw. Every Plaid call now goes through a wrapper (`lib/plaid.ts`) that rethrows a `PlaidRequestError` with only Plaid's code and message. Dwolla errors are logged as status + message only.
+- **The dev server logged server-action arguments.** That included sign-up data with SSN and password. Disabled with `logging.serverFunctions: false`.
+- **Plaid Link failures were silent.** Added an `onExit` handler, and the user now sees Plaid's message or the error code instead of nothing (or a raw "status code 400").
+- In development, Link could initialise with two different tokens because React ran the effect twice. Stale responses are now ignored.
+
 ## Remaining issues
 
-1. **Appwrite schema: `ssn` is still a required attribute.** Until it is changed, **new sign-ups fail** because the app no longer stores SSNs. Fix in the Appwrite console: Databases → users collection → Attributes → `ssn` → delete it (preferred) or untick Required. A backup of all collections is in `.backups/` (git-ignored, owner-only permissions; it contains the existing SSN value, so delete it when no longer needed). The automated change was blocked by the permission system.
-2. Existing Plaid tokens in the 2 bank documents are still plaintext (still readable; new links are encrypted). A one-off migration script can re-encrypt them.
-3. If Dwolla accepts a transfer but writing the Appwrite transaction record fails, the transfer is not shown in history. Needs reconciliation (e.g. look up the Dwolla transfer by URL).
-4. Every page view re-syncs all Plaid transactions with no stored cursor. Slow with many transactions.
-5. "Add Bank" in the right sidebar links to `/` instead of starting Plaid Link.
-6. `.env` contains `APPWRITE_SECRET`, which nothing reads (can be removed by hand).
-7. No automated tests yet.
+1. **Bank linking blocked by Plaid configuration.** Plaid returns `INVALID_PRODUCT`: the API keys in `.env.local` are not enabled for the Dwolla integration. Enable it at https://dashboard.plaid.com/developers/integrations. Until then no bank can be linked, so transfers cannot be tested.
+2. **Appwrite `ssn` attribute** is now optional (changed by you in the console), and new users are created without it. The original account's SSN value is still stored. Delete the attribute to remove it. The backup in `.backups/` also contains that value; delete it when no longer needed.
+3. Existing Plaid tokens in the 2 bank documents are still plaintext (still readable; new links are encrypted). A one-off migration script can re-encrypt them.
+4. If Dwolla accepts a transfer but writing the Appwrite transaction record fails, the transfer is not shown in history. Needs reconciliation (e.g. look up the Dwolla transfer by URL).
+5. Every page view re-syncs all Plaid transactions with no stored cursor. Slow with many transactions.
+6. "Add Bank" in the right sidebar links to `/` instead of starting Plaid Link.
+7. `.env` contains `APPWRITE_SECRET`, which nothing reads (can be removed by hand).
+8. No automated tests yet.
+9. Clicking Connect bank right after a page loads sometimes does nothing (seen twice); the second click opens Link.
+10. Dashboard UI gaps for Phase 4: no empty-state message under Recent transactions; the collapsed sidebar shows icons without labels.
+11. Unverified: whether the original account's 2 banks still load. If `.env.local`'s Plaid keys differ from the ones used to link them, their tokens will be rejected and the error screen will show.
 
 ## Tests performed
 
@@ -76,7 +86,14 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 | Forged session cookie on `/` | ✅ rejected by the server check, redirected to sign-in, no redirect loop |
 | Removed `/api/sentry-example-api` | ✅ 404 |
 | Sign-in with wrong credentials (browser) | ✅ shows "Invalid credentials" alert |
-| Signed-in flows (dashboard, linking, transfer) | ❌ Not tested: no test account available, and sign-up is blocked by remaining issue 1 |
+| Sign-up (browser, sandbox test account) | ✅ account and Dwolla customer created; user document has no SSN |
+| Sign-in with valid credentials | ✅ lands on dashboard |
+| Logout | ✅ redirects to `/sign-in`; next request to `/` redirects (cookie cleared) |
+| Dashboard, My Banks, Payment Transfer, Transaction History with no banks | ✅ render with empty states, no error boundary |
+| Page payload for signed-in user | ✅ no address, date of birth, Dwolla IDs, tokens or funding-source URLs |
+| Other user's bank IDs via `?id=` on `/` and `/transaction-history` | ✅ not shown; history shows "No bank connected yet" |
+| Plaid Link failure | ✅ readable message shown; server log has one line and no secret |
+| Bank linking success, transfers | ❌ blocked by remaining issue 1 |
 
 ## Deployment status
 

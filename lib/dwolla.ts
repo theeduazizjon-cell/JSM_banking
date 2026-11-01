@@ -52,6 +52,14 @@ const getDwollaErrorDetails = (err: unknown) => {
   return body?._embedded?.errors?.map((e) => e.message).join(" ") || body?.message;
 };
 
+// Status and Dwolla's message only, so logs never hold the raw request/response
+const describeDwollaError = (err: unknown) => {
+  const status = (err as { status?: number })?.status;
+  const details = getDwollaErrorDetails(err) ?? (err instanceof Error ? err.message : "unknown error");
+
+  return status ? `${status} ${details}` : details;
+};
+
 // Create a Dwolla Funding Source using a Plaid Processor Token
 export const createFundingSource = async (
   options: CreateFundingSourceOptions
@@ -64,7 +72,7 @@ export const createFundingSource = async (
       })
       .then((res) => res.headers.get("location"));
   } catch (err) {
-    console.error("Creating a Funding Source Failed: ", err);
+    console.error("Creating a Funding Source Failed: ", describeDwollaError(err));
   }
 };
 
@@ -76,7 +84,7 @@ export const createOnDemandAuthorization = async () => {
     const authLink = onDemandAuthorization.body._links;
     return authLink;
   } catch (err) {
-    console.error("Creating an On Demand Authorization Failed: ", err);
+    console.error("Creating an On Demand Authorization Failed: ", describeDwollaError(err));
   }
 };
 
@@ -88,7 +96,7 @@ export const createDwollaCustomer = async (
       .post("customers", newCustomer)
       .then((res) => res.headers.get("location"));
   } catch (err) {
-    console.error("Creating a Dwolla Customer Failed: ", err);
+    console.error("Creating a Dwolla Customer Failed: ", describeDwollaError(err));
 
     // Pass Dwolla's validation messages (e.g. invalid state or SSN) on to the sign-up form
     const details = getDwollaErrorDetails(err);
@@ -121,7 +129,7 @@ export const createTransfer = async ({
       .post("transfers", requestBody)
       .then((res) => res.headers.get("location"));
   } catch (err) {
-    console.error("Transfer fund failed: ", err);
+    console.error("Transfer fund failed: ", describeDwollaError(err));
 
     const details = getDwollaErrorDetails(err);
     throw new Error(details ? `Dwolla rejected the transfer: ${details}` : "The transfer could not be created.");
@@ -146,6 +154,6 @@ export const addFundingSource = async ({
     };
     return await createFundingSource(fundingSourceOptions);
   } catch (err) {
-    console.error("Adding a funding source failed: ", err);
+    console.error("Adding a funding source failed: ", describeDwollaError(err));
   }
 };

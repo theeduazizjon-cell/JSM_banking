@@ -11,7 +11,7 @@ import { CountryCode, ProcessorTokenCreateRequest, ProcessorTokenCreateRequestPr
 
 import { createAdminClient, createSessionClient, SESSION_COOKIE } from "../appwrite";
 import { addFundingSource, createDwollaCustomer } from "../dwolla";
-import { plaidClient } from '../plaid';
+import { getPlaidErrorMessage, plaidClient } from '../plaid';
 import { authFormSchema, extractCustomerIdFromUrl, parseStringify, toShareableId } from "../utils";
 import { createBankAccount } from "../data/bank";
 import { getCurrentUser, toPublicUser } from "../data/user";
@@ -163,8 +163,8 @@ export const createLinkToken = async (): Promise<ActionResult<{ linkToken: strin
 
     return { ok: true, data: { linkToken: response.data.link_token } };
   } catch (error) {
-    console.error('Creating a Plaid link token failed:', error);
-    return { ok: false, error: 'Could not start bank linking. Please try again.' };
+    console.error('Creating a Plaid link token failed:', error instanceof Error ? error.message : error);
+    return { ok: false, error: getPlaidErrorMessage(error, 'Could not start bank linking. Please try again.') };
   }
 }
 
@@ -223,7 +223,7 @@ export const exchangePublicToken = async ({
 
     return { ok: true };
   } catch (error) {
-    console.error("An error occurred while exchanging the public token:", error);
-    return { ok: false, error: error instanceof Error ? error.message : 'Could not connect this bank. Please try again.' };
+    console.error("An error occurred while exchanging the public token:", error instanceof Error ? error.message : error);
+    return { ok: false, error: getPlaidErrorMessage(error, 'Could not connect this bank. Please try again.') };
   }
 }

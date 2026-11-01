@@ -2,7 +2,11 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  logging: {
+    // The dev server otherwise prints server action arguments, which include
+    // passwords and SSNs from the auth forms.
+    serverFunctions: false,
+  },
 };
 
 export default withSentryConfig(nextConfig, {
