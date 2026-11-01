@@ -25,7 +25,7 @@ const CategoryBadge = ({ category }: CategoryBadgeProps) => {
   )
 } 
 
-const TransactionsTable = ({ transactions = [] }: TransactionTableProps) => {
+const TransactionsTable = ({ transactions = [], emptyMessage = 'No transactions for this account yet.' }: TransactionTableProps) => {
   return (
     <Table>
       <TableHeader className="bg-[#f9fafb]">
@@ -42,7 +42,7 @@ const TransactionsTable = ({ transactions = [] }: TransactionTableProps) => {
         {transactions.length === 0 && (
           <TableRow>
             <TableCell colSpan={6} className="py-10 text-center text-14 text-gray-600">
-              No transactions for this account yet.
+              {emptyMessage}
             </TableCell>
           </TableRow>
         )}

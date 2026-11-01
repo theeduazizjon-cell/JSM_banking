@@ -13,5 +13,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/my-banks/:path*', '/payment-transfer/:path*', '/transaction-history/:path*'],
+  matcher: ['/', '/my-banks/:path*', '/payment-transfer/:path*', '/transaction-history/:path*', '/settings/:path*'],
 }

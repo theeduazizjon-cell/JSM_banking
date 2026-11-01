@@ -11,7 +11,7 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 | 2. Tools and agents | ✅ Built-in tools are enough; only dev test packages needed (approved, not yet installed) |
 | 3. Error fixing and security | ✅ Done; signed-in flows tested except bank linking and transfers (blocked by a Plaid dashboard setting) |
 | 4. UI/UX | 🟡 First pass done (theme tokens, accessibility, responsive fixes, empty states); screens with real bank data not yet reviewed |
-| 5. Banking features | ⏳ Not started |
+| 5. Banking features | 🟡 Search/filters, cash-flow analytics and Settings built; filters and analytics untested with real bank data |
 | 6. Architecture | 🟡 Partly done (data access layer introduced in Phase 3) |
 | 7. Testing | ⏳ Not started (no automated tests yet) |
 | 8. Security audit | 🟡 Main issues fixed in Phase 3; full review pending |
@@ -99,6 +99,23 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 - Removed the unused tutorial assets `auth-image.svg` and `jsm.svg`.
 - Every "Horizon" reference was renamed. Page metadata now uses a title template (e.g. "My Banks · Ledgerly"), and the description says what the app does.
 - Not checked: whether "Ledgerly" is trademarked or already used by another product.
+
+## Phase 5: Banking features (2026-11-02)
+
+### Added
+- **Transaction search and filters** on Transaction History: text search (merchant or category), money in/out, category, and a date range. It is a plain GET form, so filters live in the URL: they work without JavaScript, survive reloads and keep working across pagination. Malformed values in the URL are ignored. The page shows a result count and a "no matches" state.
+- **Cash-flow analytics** on the dashboard for the selected account: income, expenses and net for the current month, plus a six-month income vs. expenses bar chart (Chart.js, already a dependency). Pending transactions are excluded because their amounts can still change.
+- **Settings page** (`/settings`, in the navigation and protected by the proxy): profile details rendered server-side only, and a password change. Appwrite verifies the current password through the user's own session, and the form maps Appwrite errors to clear messages.
+- Pure helpers in `lib/transactions.ts` hold the filter and summary logic, so it can be unit-tested.
+
+### Deliberately not added
+- **Notifications:** with no real event source (webhooks from Plaid/Dwolla are not configured) they would be fabricated.
+- **Profile editing:** name and address were verified with Dwolla at sign-up. Changing them would require updating the Dwolla customer, which is out of scope.
+
+### Verified
+- 14 checks of the filter and cash-flow logic with sample data (search, type, category, date range including ISO timestamps, ignoring malformed input, month bucketing, pending exclusion). Run as a script; they become unit tests in Phase 7.
+- Settings in the browser: a wrong current password shows "Your current password is incorrect."; a correct change shows "Password updated." and clears the fields. Appwrite then accepts the new password and rejects the old one (`.env.local` updated). No horizontal overflow at 375px.
+- Not verified in the browser: the filter form and cash-flow section. Both only render for an account with a linked bank.
 
 ## Remaining issues
 

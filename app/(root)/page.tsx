@@ -1,3 +1,4 @@
+import CashFlowSummary from '@/components/CashFlowSummary';
 import HeaderBox from '@/components/HeaderBox';
 import RecentTransactions from '@/components/RecentTransactions';
 import RightSidebar from '@/components/RightSidebar';
@@ -49,6 +50,8 @@ const Home = async ({ searchParams }: { searchParams: Promise<SearchParamProps['
           totalCurrentBalance={accounts.totalCurrentBalance}
           />
         </header>
+
+        {account && <CashFlowSummary transactions={account.transactions} />}
 
         <RecentTransactions
           accounts={accountsData}

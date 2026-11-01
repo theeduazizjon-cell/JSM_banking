@@ -12,7 +12,7 @@ import { CountryCode, ProcessorTokenCreateRequest, ProcessorTokenCreateRequestPr
 import { createAdminClient, createSessionClient, SESSION_COOKIE } from "../appwrite";
 import { addFundingSource, createDwollaCustomer } from "../dwolla";
 import { getPlaidErrorMessage, plaidClient } from '../plaid';
-import { authFormSchema, extractCustomerIdFromUrl, parseStringify, toShareableId } from "../utils";
+import { authFormSchema, changePasswordSchema, extractCustomerIdFromUrl, parseStringify, toShareableId } from "../utils";
 import { createBankAccount } from "../data/bank";
 import { getCurrentUser, toPublicUser } from "../data/user";
 
@@ -225,5 +225,33 @@ export const exchangePublicToken = async ({
   } catch (error) {
     console.error("An error occurred while exchanging the public token:", error instanceof Error ? error.message : error);
     return { ok: false, error: getPlaidErrorMessage(error, 'Could not connect this bank. Please try again.') };
+  }
+}
+
+export const changePassword = async (input: ChangePasswordValues): Promise<ActionResult> => {
+  const parsed = changePasswordSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Please check the form.' };
+  }
+
+  try {
+    // The session client acts as the signed-in user, and Appwrite checks the
+    // old password itself before accepting the new one.
+    const { account } = await createSessionClient();
+    await account.updatePassword({ password: parsed.data.newPassword, oldPassword: parsed.data.currentPassword });
+
+    return { ok: true };
+  } catch (error) {
+    const type = (error as { type?: string })?.type;
+    console.error('Password change failed:', type ?? (error instanceof Error ? error.message : error));
+
+    if (type === 'user_invalid_credentials') return { ok: false, error: 'Your current password is incorrect.' };
+    if (type === 'user_password_recently_used') return { ok: false, error: 'Choose a password you have not used recently.' };
+    if (error instanceof Error && error.message === 'No session') {
+      return { ok: false, error: 'Your session has expired. Please sign in again.' };
+    }
+
+    return { ok: false, error: 'Could not change your password. Please try again.' };
   }
 }

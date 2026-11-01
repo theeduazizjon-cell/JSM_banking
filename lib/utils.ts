@@ -214,6 +214,18 @@ export const transferFormSchema = z.object({
   sharableId: z.string().trim().min(8, "Please enter a valid shareable ID"),
 });
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Enter your current password"),
+  newPassword: z.string().min(8, "Use at least 8 characters").max(256),
+  confirmPassword: z.string(),
+}).refine((v) => v.newPassword === v.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+}).refine((v) => v.newPassword !== v.currentPassword, {
+  message: "The new password must be different",
+  path: ["newPassword"],
+});
+
 export const authFormSchema = (type: string) => z.object({
   // sign up
   firstName: type === 'sign-in' ? z.string().optional() : z.string().min(3),

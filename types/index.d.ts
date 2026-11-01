@@ -39,6 +39,12 @@ declare type TransferFormValues = {
   sharableId: string;
 };
 
+declare type ChangePasswordValues = {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+};
+
 declare type LoginUser = {
   email: string;
   password: string;
@@ -259,6 +265,7 @@ declare interface CategoryBadgeProps {
 
 declare interface TransactionTableProps {
   transactions: Transaction[];
+  emptyMessage?: string;
 }
 
 declare interface CategoryProps {
