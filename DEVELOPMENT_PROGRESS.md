@@ -62,7 +62,7 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 
 ## Remaining issues
 
-1. **Bank linking blocked by Plaid configuration.** Plaid returns `INVALID_PRODUCT`: the API keys in `.env.local` are not enabled for the Dwolla integration. Enable it at https://dashboard.plaid.com/developers/integrations. Until then no bank can be linked, so transfers cannot be tested.
+1. **Bank linking blocked by Plaid configuration.** Plaid returns `INVALID_PRODUCT`: the API keys in `.env.local` are not enabled for the Dwolla integration. Enable it at https://dashboard.plaid.com/developers/integrations. Until then no bank can be linked, so transfers cannot be tested. Re-checked after the integration was reportedly enabled: a direct sandbox API call with client ID `…e109` (the only one in `.env` and `.env.local`) still returns `INVALID_PRODUCT`.
 2. **Appwrite `ssn` attribute** is now optional (changed by you in the console), and new users are created without it. The original account's SSN value is still stored. Delete the attribute to remove it. The backup in `.backups/` also contains that value; delete it when no longer needed.
 3. Existing Plaid tokens in the 2 bank documents are still plaintext (still readable; new links are encrypted). A one-off migration script can re-encrypt them.
 4. If Dwolla accepts a transfer but writing the Appwrite transaction record fails, the transfer is not shown in history. Needs reconciliation (e.g. look up the Dwolla transfer by URL).
@@ -70,9 +70,8 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 6. "Add Bank" in the right sidebar links to `/` instead of starting Plaid Link.
 7. `.env` contains `APPWRITE_SECRET`, which nothing reads (can be removed by hand).
 8. No automated tests yet.
-9. Clicking Connect bank right after a page loads sometimes does nothing (seen twice); the second click opens Link.
-10. Dashboard UI gaps for Phase 4: no empty-state message under Recent transactions; the collapsed sidebar shows icons without labels.
-11. Unverified: whether the original account's 2 banks still load. If `.env.local`'s Plaid keys differ from the ones used to link them, their tokens will be rejected and the error screen will show.
+9. Dashboard UI gaps for Phase 4: no empty-state message under Recent transactions; the collapsed sidebar shows icons without labels.
+10. Unverified: whether the original account's 2 banks still load. If `.env.local`'s Plaid keys differ from the ones used to link them, their tokens will be rejected and the error screen will show.
 
 ## Tests performed
 
