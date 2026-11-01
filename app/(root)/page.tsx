@@ -8,7 +8,7 @@ import React from 'react'
 
 // Next 16 passes searchParams as a Promise
 const Home = async ({ searchParams }: { searchParams: Promise<SearchParamProps['searchParams']> }) => {
-  const { id, page } = await searchParams;
+  const { id, page, transfer } = await searchParams;
   const currentPage = Number(page as string) || 1;
   const loggedIn = await requireUser();
 
@@ -28,6 +28,11 @@ const Home = async ({ searchParams }: { searchParams: Promise<SearchParamProps['
   return (
     <section className="home">
        <div className="home-content">
+        {transfer === 'success' && (
+          <p role="status" className="text-14 rounded-lg border border-success-100 bg-success-25 px-4 py-3 font-medium text-success-700">
+            Transfer sent. It now appears in the transaction history of both accounts. This is a Dwolla sandbox transfer, so no real money moved.
+          </p>
+        )}
         <header className="home-header">
           <HeaderBox 
           type="greeting"

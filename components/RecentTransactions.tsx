@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BankTabItem } from './BankTabItem'
 import BankInfo from './BankInfo'
 import TransactionsTable from './TransactionsTable'
@@ -21,54 +20,61 @@ const RecentTransactions = ({
     indexOfFirstTransaction, indexOfLastTransaction
   )
 
+  const selectedAccount = accounts.find((account) => account.appwriteItemId === appwriteItemId);
+
   return (
-    <section className="recent-transactions">
+    <section className="recent-transactions" aria-labelledby="recent-transactions-heading">
       <header className="flex items-center justify-between">
-        <h2 className="recent-transactions-label">Recent transactions</h2>
-        <Link
-          href={`/transaction-history/?id=${appwriteItemId}`}
-          className="view-all-btn"
-        >
-          View all
-        </Link>
+        <h2 id="recent-transactions-heading" className="recent-transactions-label">Recent transactions</h2>
+        {selectedAccount && (
+          <Link
+            href={`/transaction-history/?id=${appwriteItemId}`}
+            className="view-all-btn"
+          >
+            View all
+          </Link>
+        )}
       </header>
 
-      <Tabs defaultValue={appwriteItemId} className="w-full">
-      <TabsList className="recent-transactions-tablist">
-          {accounts.map((account: Account) => (
-            <TabsTrigger key={account.id} value={account.appwriteItemId}>
+      {!selectedAccount ? (
+        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-gray-300 px-6 py-12 text-center">
+          <p className="text-16 font-semibold text-gray-900">No bank connected yet</p>
+          <p className="text-14 max-w-sm text-gray-600">
+            Link a bank to see your balances and recent transactions here.
+          </p>
+          <Link href="/my-banks" className="form-link mt-2">
+            Connect a bank
+          </Link>
+        </div>
+      ) : (
+        <>
+          <nav aria-label="Bank accounts" className="recent-transactions-tablist">
+            {accounts.map((account: Account) => (
               <BankTabItem
                 key={account.id}
                 account={account}
                 appwriteItemId={appwriteItemId}
               />
-            </TabsTrigger>
-          ))}
-        </TabsList>
+            ))}
+          </nav>
 
-        {accounts.map((account: Account) => (
-          <TabsContent
-            value={account.appwriteItemId}
-            key={account.id}
-            className="space-y-4"
-          >
-            <BankInfo 
-              account={account}
+          <div className="space-y-4">
+            <BankInfo
+              account={selectedAccount}
               appwriteItemId={appwriteItemId}
               type="full"
             />
 
             <TransactionsTable transactions={currentTransactions} />
-            
 
             {totalPages > 1 && (
               <div className="my-4 w-full">
                 <Pagination totalPages={totalPages} page={page} />
               </div>
             )}
-          </TabsContent>
-        ))}
-      </Tabs>
+          </div>
+        </>
+      )}
     </section>
   )
 }

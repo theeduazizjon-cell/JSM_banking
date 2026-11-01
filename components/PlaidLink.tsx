@@ -91,14 +91,15 @@ const PlaidLink = ({ variant }: PlaidLinkProps) => {
           <p className='hidden text-[16px] font-semibold text-black-2 xl:block'>Connect bank</p>
         </Button>
       ): (
-        <Button onClick={() => open()} disabled={disabled} className="plaidlink-default">
+        <Button onClick={() => open()} disabled={disabled} className="plaidlink-default" aria-label="Connect bank" title="Connect bank">
           <Image
             src="/icons/connect-bank.svg"
             alt=""
             width={24}
             height={24}
           />
-          <p className='text-[16px] font-semibold text-black-2'>Connect bank</p>
+          {/* Matches the sidebar links, which show icons only below xl */}
+          <span className='sidebar-label'>Connect bank</span>
         </Button>
       )}
       {error && <p role="alert" className="text-12 text-red-500">{error}</p>}

@@ -26,9 +26,9 @@ const Sidebar = ({ user }: SidebarProps) => {
                       className = "size-[24px] max-xl:size-14"
             />
 
-            <h1 className="sidebar-logo">
+            <span className="sidebar-logo">
                 Horizon
-            </h1>
+            </span>
             </Link>
 
             {sidebarLinks.map((item) => {
@@ -38,11 +38,15 @@ const Sidebar = ({ user }: SidebarProps) => {
                     <Link 
                     href={item.route} 
                     key={item.label} 
+                    aria-current={isActive ? 'page' : undefined}
+                    // Labels are hidden on medium screens, so keep the name for screen readers and tooltips
+                    aria-label={item.label}
+                    title={item.label}
                     className={cn('sidebar-link', {'bg-bank-gradient': isActive})}>
                         <div className = 'relative size-6'>
                             <Image
                             src={item.imgURL}
-                            alt={item.label}
+                            alt=""
                             fill
                             className={cn({
                                 'brightness-[3] invert-0': isActive,

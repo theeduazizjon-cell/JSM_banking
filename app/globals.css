@@ -9,6 +9,28 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+  /* Semantic tokens used by the shadcn/ui components (bg-popover, ring-ring,
+     border-input, ...). Without them those classes generate nothing, which
+     left inputs without a focus ring and dropdowns without a background. */
+  --color-background: #FFFFFF;
+  --color-foreground: #101828;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #101828;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #101828;
+  --color-primary: #0179FE;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #F2F4F7;
+  --color-secondary-foreground: #344054;
+  --color-muted: #F9FAFB;
+  --color-muted-foreground: #475467;
+  --color-accent: #F5FAFF;
+  --color-accent-foreground: #175CD3;
+  --color-destructive: #D92D20;
+  --color-border: #EAECF0;
+  --color-input: #D0D5DD;
+  --color-ring: #0179FE;
+
   /* colors */
   --color-fill-1: rgba(255, 255, 255, 0.10);
   --color-bankGradient: #0179FE;
@@ -121,6 +143,34 @@
     border-color: var(--color-gray-200, currentColor);
   }
 
+  /* The design is light-only: say so explicitly, so browsers in dark mode
+     don't render dark form controls or a dark canvas under dark text */
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+
+  /* Visible keyboard focus everywhere (WCAG 2.4.7); mouse clicks don't show it */
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   /* v3 placeholder color was gray-400; v4 uses currentColor at 50% */
   input::placeholder,
   textarea::placeholder {
@@ -186,7 +236,7 @@
 }
 
 @utility input-class {
-  @apply text-16 placeholder:text-16 rounded-lg border border-gray-300 text-gray-900 placeholder:text-gray-500;
+  @apply text-16 placeholder:text-16 h-11! rounded-lg border border-gray-300 text-gray-900 placeholder:text-gray-500;
 }
 
 
@@ -326,12 +376,12 @@
 
 /* My Banks */
 @utility my-banks {
-  @apply flex h-screen max-h-screen w-full flex-col gap-8 bg-gray-25 p-8 xl:py-12;
+  @apply flex min-h-full w-full flex-col gap-8 bg-gray-25 p-5 sm:p-8 xl:py-12;
 }
 
 /* My Banks */
 @utility transactions {
-  @apply flex max-h-screen w-full flex-col gap-8 overflow-y-scroll bg-gray-25 p-8 xl:py-12;
+  @apply flex max-h-screen w-full flex-1 flex-col gap-8 overflow-y-auto bg-gray-25 p-5 sm:p-8 xl:py-12;
 }
 
 @utility transactions-header {
@@ -387,7 +437,7 @@
 
 /* Mobile nav */
 @utility mobilenav-sheet {
-  @apply flex h-[calc(100vh-72px)] flex-col justify-between overflow-y-auto;
+  @apply flex h-[calc(100dvh-72px)] flex-col justify-between overflow-y-auto px-4;
 }
 
 @utility mobilenav-sheet_close {
@@ -396,7 +446,7 @@
 
 /* PlaidLink */
 @utility plaidlink-primary {
-  @apply text-16 rounded-lg border border-bankGradient bg-bank-gradient font-semibold text-white shadow-form;
+  @apply text-16 h-11! w-full rounded-lg border border-bankGradient bg-bank-gradient px-5! font-semibold text-white shadow-form hover:opacity-90;
 }
 
 @utility plaidlink-ghost {
@@ -404,7 +454,7 @@
 }
 
 @utility plaidlink-default {
-  @apply flex justify-start! cursor-pointer gap-3 rounded-lg bg-transparent! flex-row;
+  @apply flex h-auto! cursor-pointer flex-row items-center justify-center! gap-3 rounded-lg bg-transparent! py-1 hover:bg-gray-25! md:p-3 xl:justify-start! 2xl:p-4;
 }
 
 /* Auth */
@@ -430,7 +480,7 @@
 }
 
 @utility form-btn {
-  @apply text-16 rounded-lg border border-bankGradient bg-bank-gradient font-semibold text-white shadow-form;
+  @apply text-16 h-11! rounded-lg border border-bankGradient bg-bank-gradient font-semibold text-white shadow-form hover:opacity-90;
 }
 
 @utility form-link {
@@ -439,7 +489,7 @@
 
 /* Payment Transfer */
 @utility payment-transfer {
-  @apply no-scrollbar flex flex-col overflow-y-scroll bg-gray-25 p-8 md:max-h-screen xl:py-12;
+  @apply no-scrollbar flex flex-1 flex-col overflow-y-auto bg-gray-25 p-5 sm:p-8 md:max-h-screen xl:py-12;
 }
 
 @utility payment-transfer_form-item {
@@ -459,7 +509,7 @@
 }
 
 @utility payment-transfer_btn {
-  @apply text-14! w-full! bg-bank-gradient! font-semibold! text-white! shadow-form!;
+  @apply text-16! h-11! w-full! bg-bank-gradient! font-semibold! text-white! shadow-form! hover:opacity-90;
 }
 
 /* Root Layout */
@@ -474,7 +524,7 @@
 
 /* Footer */
 @utility footer {
-  @apply flex cursor-pointer items-center justify-between gap-2 py-6;
+  @apply flex items-center justify-between gap-2 py-6;
 }
 
 @utility footer_name {

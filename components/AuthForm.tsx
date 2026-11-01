@@ -99,7 +99,7 @@ const AuthForm = ({ type }: { type: string }) => {
               height={34}
               alt="Horizon logo"
             />
-            <h1 className="text-26 font-ibm-plex-serif font-bold text-black-1">Horizon</h1>
+            <span className="text-26 font-ibm-plex-serif font-bold text-black-1">Horizon</span>
           </Link>
 
           <div className="flex flex-col gap-1 md:gap-3">
@@ -110,13 +110,15 @@ const AuthForm = ({ type }: { type: string }) => {
                   ? 'Sign In'
                   : 'Sign Up'
               }
-              <p className="text-16 font-normal text-gray-600">
-                {user 
-                  ? 'Link your account to get started'
-                  : 'Please enter your details'
-                }
-              </p>  
             </h1>
+            <p className="text-16 font-normal text-gray-600">
+              {user 
+                ? 'Link your account to get started'
+                : type === 'sign-in'
+                  ? 'Welcome back. Sign in to your sandbox account.'
+                  : 'Create a sandbox account. No real bank or money is involved.'
+              }
+            </p>
           </div>
       </header>
       {user ? (

@@ -39,6 +39,13 @@ const TransactionsTable = ({ transactions = [] }: TransactionTableProps) => {
         </TableRow>
       </TableHeader>
       <TableBody>
+        {transactions.length === 0 && (
+          <TableRow>
+            <TableCell colSpan={6} className="py-10 text-center text-14 text-gray-600">
+              No transactions for this account yet.
+            </TableCell>
+          </TableRow>
+        )}
         {transactions.map((t: Transaction) => {
           const status = getTransactionStatus(t)
           const amount = formatAmount(t.amount)
@@ -71,7 +78,7 @@ const TransactionsTable = ({ transactions = [] }: TransactionTableProps) => {
                 {formatDateTime(new Date(t.date)).dateTime}
               </TableCell>
 
-              <TableCell className="pl-2 pr-10 capitalize min-w-24">
+              <TableCell className="pl-2 pr-10 capitalize min-w-24 max-md:hidden">
                {t.paymentChannel}
               </TableCell>
 

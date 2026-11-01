@@ -18,9 +18,9 @@ const RightSidebar = ({ user, transactions, banks }: RightSidebarProps) => {
           </div>
 
           <div className="profile-details">
-            <h1 className='profile-name'>
+            <p className='profile-name'>
               {user.firstName} {user.lastName}
-            </h1>
+            </p>
             <p className="profile-email">
               {user.email}
             </p>
@@ -31,16 +31,16 @@ const RightSidebar = ({ user, transactions, banks }: RightSidebarProps) => {
       <section className="banks">
         <div className="flex w-full justify-between">
           <h2 className="header-2">My Banks</h2>
-          <Link href="/" className="flex gap-2">
+          <Link href="/my-banks" className="flex items-center gap-2">
             <Image 
                src="/icons/plus.svg"
               width={20}
               height={20}
-              alt="plus"
+              alt=""
             />
-            <h2 className="text-14 font-semibold text-gray-600">
+            <span className="text-14 font-semibold text-gray-600">
               Add Bank
-            </h2>
+            </span>
           </Link>
         </div>
 
@@ -71,6 +71,11 @@ const RightSidebar = ({ user, transactions, banks }: RightSidebarProps) => {
           <h2 className="header-2">Top categories</h2>
 
           <div className='space-y-5'>
+            {categories.length === 0 && (
+              <p className="text-14 text-gray-600">
+                Spending categories appear here once transactions come in.
+              </p>
+            )}
             {categories.map((category) => (
               <Category key={category.name} category={category} />
             ))}

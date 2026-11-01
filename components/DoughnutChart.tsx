@@ -21,8 +21,19 @@ const DoughnutChart = ({ accounts }:DoughnutChartProps) => {
         labels: accountNames
     }
 
+  // An empty ring keeps the layout steady before any bank is linked
+  if (accounts.length === 0 || balances.every((b) => b === 0)) {
+    return (
+      <div
+        role="img"
+        aria-label="No balances to chart yet"
+        className="aspect-square w-full rounded-full border-[14px] border-gray-200"
+      />
+    );
+  }
+
   return (
-    <Doughnut data={data} 
+    <Doughnut data={data} aria-label={`Balance split across ${accounts.length} bank account${accounts.length === 1 ? '' : 's'}`} 
     options={{
         cutout: '60%', 
         plugins: {

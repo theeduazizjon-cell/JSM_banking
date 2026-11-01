@@ -10,7 +10,7 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 | 1. Audit | ✅ Done (2026-11-01) |
 | 2. Tools and agents | ✅ Built-in tools are enough; only dev test packages needed (approved, not yet installed) |
 | 3. Error fixing and security | ✅ Done; signed-in flows tested except bank linking and transfers (blocked by a Plaid dashboard setting) |
-| 4. UI/UX | ⏳ Not started |
+| 4. UI/UX | 🟡 First pass done (theme tokens, accessibility, responsive fixes, empty states); screens with real bank data not yet reviewed |
 | 5. Banking features | ⏳ Not started |
 | 6. Architecture | 🟡 Partly done (data access layer introduced in Phase 3) |
 | 7. Testing | ⏳ Not started (no automated tests yet) |
@@ -60,6 +60,39 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 - **Plaid Link failures were silent.** Added an `onExit` handler, and the user now sees Plaid's message or the error code instead of nothing (or a raw "status code 400").
 - In development, Link could initialise with two different tokens because React ran the effect twice. Stale responses are now ignored.
 
+## Phase 4: UI/UX (first pass, 2026-11-01)
+
+### Fixed
+- **Undefined theme tokens.** The shadcn/ui components use about 15 semantic colors (`ring-ring`, `bg-popover`, `border-input`, `text-muted-foreground`, ...) that were never defined, so those classes generated nothing. Inputs had no focus indicator and the select popup had no background. The tokens are now defined from the existing brand palette.
+- **No visible keyboard focus** (WCAG 2.4.7). Inputs now show a ring, and all other focusable elements get a 2px brand outline on `:focus-visible`.
+- **Unreadable in dark mode.** The design is light-only but did not say so, so browsers in dark mode showed dark text on a dark canvas. Added `color-scheme: light` and an explicit page background.
+- `prefers-reduced-motion` is respected.
+- Removed two unused font families (Geist, Geist Mono) that were downloaded on every page.
+- **Bank tabs on the dashboard** only changed the URL from a `div` click inside a tab button, so the keyboard could not switch banks, and every tab rendered the same list. They are now links with `aria-current`.
+- Transaction History gained the same bank switcher (it had no way to change account).
+- **Table columns misaligned on phones.** The Channel header was hidden below `md` but its cells were not.
+- One `<h1>` per page: logo text is no longer a heading. Fixed a `<p>` nested inside the auth form's `<h1>`.
+- Sidebar links keep accessible names and tooltips when collapsed to icons; Connect bank collapses like the other items instead of overflowing.
+- The mobile menu button has a label; the mobile menu now has side padding (items and avatar were flush against the edge).
+- Decorative images use empty `alt`; pagination reads "Page X of Y" and announces changes.
+- Primary buttons and inputs are 44px tall (were 32px), the minimum comfortable touch target.
+- The footer no longer shows a pointer cursor across its whole area.
+- **Empty states** for the balance chart, Recent transactions, transaction table and Top categories.
+- **No way to connect a bank on mobile.** My Banks now has a Connect bank button, and the empty states and "Add Bank" link point there (previously "Add Bank" went to `/`).
+- **Transfer confirmation.** The dashboard now shows a status banner after a successful transfer (`?transfer=success` was set but never read).
+- Page backgrounds fill the screen on short pages; mobile padding reduced from 32px to 20px.
+- Clearer copy on auth pages and the transfer page, stating that this is a sandbox.
+
+### Checked in the browser
+- Dashboard, My Banks, Payment Transfer and sign-in/sign-up at 1440px, 1024px and 375px, with the browser in dark mode.
+- No horizontal overflow at 375px.
+- Tab order and focus rings on the mobile menu and sign-up form.
+
+### Not yet done
+- Screens with real bank data (cards, transaction table, doughnut chart, transfer form with the bank dropdown) are unreviewed. No bank can be linked until the Plaid Dwolla integration works.
+- A full dark theme (currently intentionally light-only).
+- Visual identity: the app still uses the tutorial's "Horizon" name, logo and auth illustration.
+
 ## Remaining issues
 
 1. **Bank linking blocked by Plaid configuration.** Plaid returns `INVALID_PRODUCT`: the API keys in `.env.local` are not enabled for the Dwolla integration. Enable it at https://dashboard.plaid.com/developers/integrations. Until then no bank can be linked, so transfers cannot be tested. Re-checked after the integration was reportedly enabled: a direct sandbox API call with client ID `…e109` (the only one in `.env` and `.env.local`) still returns `INVALID_PRODUCT`.
@@ -67,11 +100,9 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 3. Existing Plaid tokens in the 2 bank documents are still plaintext (still readable; new links are encrypted). A one-off migration script can re-encrypt them.
 4. If Dwolla accepts a transfer but writing the Appwrite transaction record fails, the transfer is not shown in history. Needs reconciliation (e.g. look up the Dwolla transfer by URL).
 5. Every page view re-syncs all Plaid transactions with no stored cursor. Slow with many transactions.
-6. "Add Bank" in the right sidebar links to `/` instead of starting Plaid Link.
-7. `.env` contains `APPWRITE_SECRET`, which nothing reads (can be removed by hand).
-8. No automated tests yet.
-9. Dashboard UI gaps for Phase 4: no empty-state message under Recent transactions; the collapsed sidebar shows icons without labels.
-10. Unverified: whether the original account's 2 banks still load. If `.env.local`'s Plaid keys differ from the ones used to link them, their tokens will be rejected and the error screen will show.
+6. `.env` contains `APPWRITE_SECRET`, which nothing reads (can be removed by hand).
+7. No automated tests yet.
+8. Unverified: whether the original account's 2 banks still load. If `.env.local`'s Plaid keys differ from the ones used to link them, their tokens will be rejected and the error screen will show.
 
 ## Tests performed
 

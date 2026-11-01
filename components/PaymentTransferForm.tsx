@@ -112,7 +112,7 @@ const PaymentTransferForm = ({ accounts }: PaymentTransferFormProps) => {
                   <FormControl>
                     <Textarea
                       placeholder="Write a short note here"
-                      className="input-class"
+                      className="input-class h-auto! min-h-24"
                       {...field}
                     />
                   </FormControl>

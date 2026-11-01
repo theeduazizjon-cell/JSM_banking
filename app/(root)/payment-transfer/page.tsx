@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import HeaderBox from '@/components/HeaderBox'
 import PaymentTransferForm from '@/components/PaymentTransferForm'
 import { getAccounts } from '@/lib/data/bank';
@@ -17,7 +18,7 @@ const Transfer = async () => {
     <section className="payment-transfer">
       <HeaderBox
         title="Payment Transfer"
-        subtext="Please provide any specific details or notes related to the payment transfer"
+        subtext="Send money from one of your linked accounts to another Horizon account (Dwolla sandbox)."
       />
 
       <section className="size-full pt-5">
@@ -25,7 +26,7 @@ const Transfer = async () => {
           <PaymentTransferForm accounts={accountsData} />
         ) : (
           <p className="text-16 text-gray-600">
-            Connect a bank from the sidebar before making a transfer.
+            Connect a bank on the <Link href="/my-banks" className="form-link text-16">My Banks</Link> page before making a transfer.
           </p>
         )}
       </section>

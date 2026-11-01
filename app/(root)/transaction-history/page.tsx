@@ -1,4 +1,5 @@
 import HeaderBox from '@/components/HeaderBox'
+import { BankTabItem } from '@/components/BankTabItem';
 import { Pagination } from '@/components/Pagination';
 import TransactionsTable from '@/components/TransactionsTable';
 import { getAccount, getAccounts } from '@/lib/data/bank';
@@ -46,13 +47,25 @@ const currentTransactions = account?.transactions.slice(
 
       {!account ? (
         <p className="text-16 text-gray-600">
-          No bank connected yet. Use Connect Bank in the sidebar to see your transactions.
+          No bank connected yet. Go to My Banks to connect one and see your transactions.
         </p>
       ) : (
       <div className="space-y-6">
+        {accountsData.length > 1 && (
+          <nav aria-label="Bank accounts" className="recent-transactions-tablist mb-0">
+            {accountsData.map((a: Account) => (
+              <BankTabItem
+                key={a.id}
+                account={a}
+                appwriteItemId={appwriteItemId}
+                basePath="/transaction-history"
+              />
+            ))}
+          </nav>
+        )}
         <div className="transactions-account">
           <div className="flex flex-col gap-2">
-            <h2 className="text-18 font-bold text-white">{account?.data.name}</h2>
+            <h2 className="text-18 font-bold text-white">{account.data.name}</h2>
             <p className="text-14 text-blue-25">
               {account?.data.officialName}
             </p>

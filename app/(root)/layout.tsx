@@ -2,6 +2,7 @@ import MobileNav from "@/components/MobileNav";
 import Sidebar from "@/components/Sidebar";
 import { requireUser, toPublicUser } from "@/lib/data/user";
 import Image from "next/image";
+import Link from "next/link";
 
 export default async function RootLayout({
   children,
@@ -16,7 +17,9 @@ export default async function RootLayout({
     <Sidebar user={user}/>
     <div className='flex size-full flex-col'>
       <div className="root-layout">
-        <Image src='/icons/logo.svg' width={30} height={30} alt="logo"/>
+        <Link href="/" aria-label="Horizon home">
+          <Image src='/icons/logo.svg' width={30} height={30} alt=""/>
+        </Link>
         <div>
           <MobileNav user={user}/>
         </div>

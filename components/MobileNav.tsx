@@ -21,12 +21,12 @@ const MobileNav = ({ user }: MobileNavProps) => {
   return (
     <section className="w-full max-w-[264px]">
       <Sheet>
-        <SheetTrigger className="cursor-pointer">
+        <SheetTrigger className="cursor-pointer" aria-label="Open navigation menu">
           <Image
             src="/icons/hamburger.svg"
             width={30}
             height={30}
-            alt="menu"
+            alt=""
           />
         </SheetTrigger>
         <SheetContent side="left" className="border-none bg-white">
@@ -41,7 +41,7 @@ const MobileNav = ({ user }: MobileNavProps) => {
               height={34}
               alt="Horizon logo"
             />
-            <h1 className="text-26 font-ibm-plex-serif font-bold text-black-1">Horizon</h1>
+            <span className="text-26 font-ibm-plex-serif font-bold text-black-1">Horizon</span>
           </Link>
           <div className="mobilenav-sheet">
             <nav className="flex h-full flex-col gap-6 pt-16 text-white">
@@ -55,13 +55,14 @@ const MobileNav = ({ user }: MobileNavProps) => {
                     render={
                       <Link
                         href={item.route}
+                        aria-current={isActive ? 'page' : undefined}
                         className={cn('mobilenav-sheet_close w-full', { 'bg-bank-gradient': isActive })}
                       />
                     }
                   >
                     <Image
                       src={item.imgURL}
-                      alt={item.label}
+                      alt=""
                       width={20}
                       height={20}
                       className={cn({
