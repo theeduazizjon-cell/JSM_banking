@@ -1,4 +1,4 @@
-"use server";
+import "server-only";
 
 import { Client } from "dwolla-v2";
 
@@ -32,8 +32,8 @@ const getRequiredEnv = (name: "DWOLLA_KEY" | "DWOLLA_SECRET"): string => {
   return value;
 };
 
-// Created on first use so pages that only import this module (e.g. via
-// user.actions) still render when Dwolla is not configured yet.
+// Created on first use so pages that only import this module still render
+// when Dwolla is not configured yet.
 let client: Client | undefined;
 
 const getDwollaClient = () => {
@@ -44,6 +44,12 @@ const getDwollaClient = () => {
   });
 
   return client;
+};
+
+const getDwollaErrorDetails = (err: unknown) => {
+  const body = (err as { body?: { message?: string; _embedded?: { errors?: { message: string }[] } } })?.body;
+
+  return body?._embedded?.errors?.map((e) => e.message).join(" ") || body?.message;
 };
 
 // Create a Dwolla Funding Source using a Plaid Processor Token
@@ -85,8 +91,7 @@ export const createDwollaCustomer = async (
     console.error("Creating a Dwolla Customer Failed: ", err);
 
     // Pass Dwolla's validation messages (e.g. invalid state or SSN) on to the sign-up form
-    const body = (err as { body?: { message?: string; _embedded?: { errors?: { message: string }[] } } })?.body;
-    const details = body?._embedded?.errors?.map((e) => e.message).join(" ") || body?.message;
+    const details = getDwollaErrorDetails(err);
 
     if (details) throw new Error(`Dwolla rejected these details: ${details}`);
   }
@@ -117,6 +122,9 @@ export const createTransfer = async ({
       .then((res) => res.headers.get("location"));
   } catch (err) {
     console.error("Transfer fund failed: ", err);
+
+    const details = getDwollaErrorDetails(err);
+    throw new Error(details ? `Dwolla rejected the transfer: ${details}` : "The transfer could not be created.");
   }
 };
 
@@ -138,6 +146,6 @@ export const addFundingSource = async ({
     };
     return await createFundingSource(fundingSourceOptions);
   } catch (err) {
-    console.error("Transfer fund failed: ", err);
+    console.error("Adding a funding source failed: ", err);
   }
 };

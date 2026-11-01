@@ -19,6 +19,26 @@ declare type SignUpParams = {
   password: string;
 };
 
+// The user fields that are safe to send to the browser
+declare type PublicUser = {
+  $id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
+declare type ActionResult<T = void> =
+  | ([T] extends [void] ? { ok: true } : { ok: true; data: T })
+  | { ok: false; error: string };
+
+declare type TransferFormValues = {
+  email: string;
+  name: string;
+  amount: string;
+  senderBank: string;
+  sharableId: string;
+};
+
 declare type LoginUser = {
   email: string;
   password: string;
@@ -38,7 +58,6 @@ declare type User = {
   state: string;
   postalCode: string;
   dateOfBirth: string;
-  ssn: string;
 };
 
 declare type NewUserParams = {
@@ -87,7 +106,7 @@ declare type Bank = {
   bankId: string;
   accessToken: string;
   fundingSourceUrl: string;
-  userId: string;
+  userId: string | { $id: string };
   shareableId: string;
 };
 
@@ -156,7 +175,7 @@ declare interface HeaderBoxProps {
 }
 
 declare interface MobileNavProps {
-  user: User;
+  user: PublicUser;
 }
 
 declare interface PageHeaderProps {
@@ -173,9 +192,7 @@ declare interface PaginationProps {
 }
 
 declare interface PlaidLinkProps {
-  user: User;
   variant?: "primary" | "ghost";
-  dwollaCustomerId?: string;
 }
 
 // declare type User = sdk.Models.Document & {
@@ -209,18 +226,18 @@ declare interface TotalBalanceBoxProps {
 }
 
 declare interface FooterProps {
-  user: User;
+  user: PublicUser;
   type?: 'mobile' | 'desktop'
 }
 
 declare interface RightSidebarProps {
-  user: User;
+  user: PublicUser;
   transactions: Transaction[];
-  banks: Bank[] & Account[];
+  banks: Account[];
 }
 
 declare interface SidebarProps {
-  user: User;
+  user: PublicUser;
 }
 
 declare interface RecentTransactionsProps {
@@ -262,6 +279,7 @@ declare interface getAccountsProps {
 
 declare interface getAccountProps {
   appwriteItemId: string;
+  userId: string;
 }
 
 declare interface getInstitutionProps {
@@ -270,6 +288,7 @@ declare interface getInstitutionProps {
 
 declare interface getTransactionsProps {
   accessToken: string;
+  accountId?: string;
 }
 
 declare interface CreateFundingSourceOptions {
@@ -304,7 +323,6 @@ declare interface getUserInfoProps {
 
 declare interface exchangePublicTokenProps {
   publicToken: string;
-  user: User;
 }
 
 declare interface createBankAccountProps {
@@ -320,8 +338,9 @@ declare interface getBanksProps {
   userId: string;
 }
 
-declare interface getBankProps {
+declare interface getOwnedBankProps {
   documentId: string;
+  userId: string;
 }
 
 declare interface getBankByAccountIdProps {

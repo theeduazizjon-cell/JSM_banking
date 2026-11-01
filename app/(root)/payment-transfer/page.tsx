@@ -1,22 +1,17 @@
 import HeaderBox from '@/components/HeaderBox'
 import PaymentTransferForm from '@/components/PaymentTransferForm'
-import { getAccounts } from '@/lib/actions/bank.actions';
-import { getLoggedInUser } from '@/lib/actions/user.actions';
-import { redirect } from 'next/navigation';
+import { getAccounts } from '@/lib/data/bank';
+import { requireUser } from '@/lib/data/user';
 import React from 'react'
 
 const Transfer = async () => {
-  const loggedIn = await getLoggedInUser();
-
-  if (!loggedIn) redirect('/sign-in')
+  const loggedIn = await requireUser();
 
   const accounts = await getAccounts({
     userId: loggedIn.$id
   })
 
-  if(!accounts) return;
-
-  const accountsData = accounts?.data;
+  const accountsData = accounts.data;
 
   return (
     <section className="payment-transfer">
@@ -26,7 +21,13 @@ const Transfer = async () => {
       />
 
       <section className="size-full pt-5">
-        <PaymentTransferForm accounts={accountsData} />
+        {accountsData.length > 0 ? (
+          <PaymentTransferForm accounts={accountsData} />
+        ) : (
+          <p className="text-16 text-gray-600">
+            Connect a bank from the sidebar before making a transfer.
+          </p>
+        )}
       </section>
     </section>
   )

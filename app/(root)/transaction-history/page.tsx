@@ -1,31 +1,29 @@
 import HeaderBox from '@/components/HeaderBox'
 import { Pagination } from '@/components/Pagination';
 import TransactionsTable from '@/components/TransactionsTable';
-import { getAccount, getAccounts } from '@/lib/actions/bank.actions';
-import { getLoggedInUser } from '@/lib/actions/user.actions';
+import { getAccount, getAccounts } from '@/lib/data/bank';
+import { requireUser } from '@/lib/data/user';
 import { formatAmount } from '@/lib/utils';
-import { redirect } from 'next/navigation';
 import React from 'react'
 
 // Next 16 passes searchParams as a Promise
 const TransactionHistory = async ({ searchParams }: { searchParams: Promise<SearchParamProps['searchParams']> }) => {
   const { id, page } = await searchParams;
   const currentPage = Number(page as string) || 1;
-  const loggedIn = await getLoggedInUser();
-
-  if (!loggedIn) redirect('/sign-in')
+  const loggedIn = await requireUser();
 
   const accounts = await getAccounts({
     userId: loggedIn.$id
   })
 
-  if(!accounts) return;
-
-  const accountsData = accounts?.data;
+  const accountsData = accounts.data;
   const appwriteItemId = (id as string) || accountsData[0]?.appwriteItemId;
 
-  // A user with no linked banks has no account to look up yet
-  const account = appwriteItemId ? await getAccount({ appwriteItemId }) : undefined;
+  // A user with no linked banks has no account to look up yet. getAccount
+  // returns null for a bank that belongs to someone else.
+  const account = appwriteItemId
+    ? await getAccount({ appwriteItemId, userId: loggedIn.$id })
+    : null;
 
 
 const rowsPerPage = 10;
@@ -65,7 +63,7 @@ const currentTransactions = account?.transactions.slice(
 
           <div className='transactions-account-balance'>
             <p className="text-14">Current balance</p>
-            <p className="text-24 text-center font-bold">{formatAmount(account?.data.currentBalance)}</p>
+            <p className="text-24 text-center font-bold">{formatAmount(account.data.currentBalance)}</p>
           </div>
         </div>
 

@@ -8,26 +8,17 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { Button } from "@/components/ui/button"
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
+import { Form } from "@/components/ui/form"
 import CustomInput from './CustomInput';
 import { authFormSchema } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getLoggedInUser, signIn, signUp } from '@/lib/actions/user.actions';
+import { signIn, signUp } from '@/lib/actions/user.actions';
 import PlaidLink from './PlaidLink';
 
 const AuthForm = ({ type }: { type: string }) => {
   const router = useRouter();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<PublicUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -72,11 +63,10 @@ const AuthForm = ({ type }: { type: string }) => {
             password: data.password
           }
 
-          const newUser = await signUp(userData);
+          const result = await signUp(userData);
 
-          if(newUser?.error) setSubmitError(newUser.error)
-          else if(newUser) setUser(newUser)
-          else setSubmitError('Sign up failed. Please check your details and try again.')
+          if(!result.ok) setSubmitError(result.error)
+          else setUser(result.data)
         }
 
         if(type === 'sign-in') {
@@ -85,12 +75,14 @@ const AuthForm = ({ type }: { type: string }) => {
             password: data.password,
           })
 
-          if(response?.error) setSubmitError(response.error)
-          else if(response) router.push('/')
-          else setSubmitError('Sign in failed. Please check your email and password.')
+          if(!response.ok) setSubmitError(response.error)
+          else {
+            router.push('/')
+            router.refresh()
+          }
         }
       } catch (error) {
-        console.log(error);
+        console.error(error);
         setSubmitError('Something went wrong. Please try again.');
       } finally {
         setIsLoading(false);
@@ -129,7 +121,7 @@ const AuthForm = ({ type }: { type: string }) => {
       </header>
       {user ? (
         <div className="flex flex-col gap-4">
-          <PlaidLink user={user} variant="primary" />
+          <PlaidLink variant="primary" />
         </div>
       ): (
         <>

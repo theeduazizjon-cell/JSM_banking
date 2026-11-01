@@ -177,21 +177,22 @@ export function extractCustomerIdFromUrl(url: string) {
   return customerId;
 }
 
-export function encryptId(id: string) {
-  return btoa(id);
+// A shareable ID is the Plaid account ID in base64. It is an identifier the
+// account holder gives out to receive transfers, not a secret.
+export function toShareableId(accountId: string) {
+  return btoa(accountId);
 }
 
-export function decryptId(id: string) {
-  return atob(id);
+export function fromShareableId(shareableId: string) {
+  try {
+    return atob(shareableId.trim());
+  } catch {
+    return null;
+  }
 }
 
-export const getTransactionStatus = (date: Date) => {
-  const today = new Date();
-  const twoDaysAgo = new Date(today);
-  twoDaysAgo.setDate(today.getDate() - 2);
-
-  return date > twoDaysAgo ? "Processing" : "Success";
-};
+export const getTransactionStatus = (transaction: Pick<Transaction, "pending">) =>
+  transaction.pending ? "Processing" : "Success";
 
 // True for a real calendar date (YYYY-MM-DD) that is not in the future
 const isValidPastDate = (value: string) => {
@@ -201,6 +202,17 @@ const isValidPastDate = (value: string) => {
     && date.toISOString().slice(0, 10) === value
     && date <= new Date();
 };
+
+export const transferFormSchema = z.object({
+  email: z.string().trim().email("Invalid email address"),
+  name: z.string().trim().max(255, "Transfer note is too long"),
+  amount: z.string().trim()
+    .regex(/^\d+(\.\d{1,2})?$/, "Enter an amount like 25 or 25.50")
+    .refine((value) => Number(value) > 0, "Amount must be greater than zero")
+    .refine((value) => Number(value) <= 5000, "Sandbox transfers are limited to $5,000"),
+  senderBank: z.string().min(1, "Please select a bank account"),
+  sharableId: z.string().trim().min(8, "Please enter a valid shareable ID"),
+});
 
 export const authFormSchema = (type: string) => z.object({
   // sign up

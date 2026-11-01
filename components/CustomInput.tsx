@@ -6,11 +6,24 @@ import { Control, FieldPath } from 'react-hook-form'
 import { z } from 'zod'
 import { authFormSchema } from '@/lib/utils'
 
-const formSchema = authFormSchema('sign-up')
+type AuthFormValues = z.infer<ReturnType<typeof authFormSchema>>
+
+// Helps password managers and mobile keyboards fill the right fields
+const autoCompleteFor: Partial<Record<FieldPath<AuthFormValues>, string>> = {
+  firstName: 'given-name',
+  lastName: 'family-name',
+  address1: 'address-line1',
+  city: 'address-level2',
+  state: 'address-level1',
+  postalCode: 'postal-code',
+  dateOfBirth: 'bday',
+  ssn: 'off',
+  email: 'email',
+}
 
 interface CustomInput {
-  control: Control<z.infer<typeof formSchema>>,
-  name: FieldPath<z.infer<typeof formSchema>>,
+  control: Control<AuthFormValues>,
+  name: FieldPath<AuthFormValues>,
   label: string,
   placeholder: string
 }
@@ -30,7 +43,8 @@ const CustomInput = ({ control, name, label, placeholder }: CustomInput) => {
               <Input
                 placeholder={placeholder}
                 className="input-class aria-invalid:border-red-500"
-                type={name === 'password' ? 'password' : 'text'}
+                type={name === 'password' ? 'password' : name === 'email' ? 'email' : 'text'}
+                autoComplete={autoCompleteFor[name]}
                 {...field}
               />
             </FormControl>
