@@ -25,6 +25,7 @@ Built with Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, Appwri
 - [Security](#security)
 - [Known limitations](#known-limitations)
 - [Project structure](#project-structure)
+- [License](#license)
 
 ## Architecture
 
@@ -220,3 +221,7 @@ types/index.d.ts     shared types
 proxy.ts             sign-in redirect and Content Security Policy
 tests/               unit, component and end-to-end tests
 ```
+
+## License
+
+[MIT](LICENSE)
