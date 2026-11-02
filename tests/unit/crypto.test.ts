@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { decryptSecret, encryptSecret } from "@/lib/crypto";
 
-const TOKEN = "access-sandbox-de3ce8ef-33f8-452c-a685-8671031fc0f6";
+// Deliberately not shaped like a real Plaid token, so secret scanners stay quiet
+const TOKEN = "fake-plaid-access-token-for-tests";
 
 describe("token encryption", () => {
   beforeEach(() => {

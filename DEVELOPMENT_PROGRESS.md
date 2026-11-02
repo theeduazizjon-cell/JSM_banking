@@ -213,8 +213,15 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 - **Sign-up notice:** "This is a demo. Use made-up details…", so public visitors don't enter real identity data.
 - **Checks:** 133 unit tests, 21 e2e tests, type check, lint and the production build all pass.
 
+### GitGuardian scan on the pull request
+GitGuardian flagged 5 "Plaid access tokens". None is a live credential; Plaid returns `INVALID_ACCESS_TOKEN` for all of them:
+- **4** are the tutorial's hard-coded sandbox tokens in old commits (`f9018b2`, `4e88798`). They were already public on GitHub before this work, and were removed from the code in Phase 8.
+- **1** was a made-up test fixture in `tests/unit/crypto.test.ts`. It now uses a value that isn't shaped like a token.
+
+The check scans every commit in the PR, so it keeps failing on the old commits. Rewriting history would remove them, but that is disruptive and not needed for invalid tokens. Instead, mark the incidents as resolved (false positive / revoked) in the GitGuardian dashboard.
+
 ### Remaining (in order)
-1. Merge the pull request from `develop` into `master` (yours to review and merge).
+1. Resolve the GitGuardian incidents, then merge the pull request from `develop` into `master` (yours to review and merge).
 2. Import the repo on Vercel. Add the Production environment variables from `.env.example`, using the same values as `.env.local`, including the same `ENCRYPTION_KEY`. Leave out `TEST_USER_*`.
 3. Enable Plaid's Dwolla integration (remaining issue 1). Until then the live site can't link banks or make transfers.
 4. Run `E2E_BASE_URL=<live URL> npm run test:e2e`, then add the live link to the README.
