@@ -15,7 +15,7 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 | 6. Architecture | 🟡 Partly done (data access layer introduced in Phase 3) |
 | 7. Testing | ✅ 114 unit/component tests and 18 end-to-end tests passing; bank linking and transfers covered only by mocked tests |
 | 8. Security audit | ✅ Done (2026-11-02); 3 items need your decision (see Remaining issues 2, 3, 9) |
-| 9. Documentation | ⏳ Not started (README still the create-next-app default) |
+| 9. Documentation | ✅ Done (2026-11-02): README rewritten, `.env.example` matches the code |
 | 10. Deployment | ⏳ Not started |
 
 ## Fixed in Phase 3
@@ -186,6 +186,22 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 ### Tests
 - 133 unit/component tests (19 new: limits, lockout across IPs, reset after success, outages don't lock, safe errors, unfinished banks).
 - 21 e2e tests, passing against both `next dev` and `next start`, including CSP violations and response headers.
+
+## Phase 9: Documentation (2026-11-02)
+
+- **README.md** rewritten. It replaces the create-next-app placeholder and covers:
+  - features, and a sandbox-only disclaimer;
+  - architecture: a diagram, the layers, the request and transfer flows, and the Appwrite data model;
+  - step-by-step setup for Appwrite, Plaid (including enabling the Dwolla integration), Dwolla, the encryption key and Sentry;
+  - scripts and testing;
+  - a security summary, known limitations and the project layout.
+
+  It credits the JavaScript Mastery tutorial the project started from.
+- **.env.example** now lists only variables the code reads. Removed: `NEXT_PUBLIC_SITE_URL`, `PLAID_PRODUCTS`, `PLAID_COUNTRY_CODES`, `DWOLLA_BASE_URL`, `SENTRY_ORG`, `SENTRY_PROJECT`; the Sentry org and project are set in `next.config.ts`. Added `TEST_USER_EMAIL` / `TEST_USER_PASSWORD` for the e2e tests. Your own `.env` / `.env.local` were not changed.
+- **Verified:**
+  - A fresh clone with only `.env.example` copied to `.env.local` runs `npm ci`, `npm run typecheck`, `npm test` (133 passed) and `npm run build`.
+  - Every README anchor and referenced file exists, and the UI labels the README mentions (Connect bank, shareable ID on My Banks) match the app.
+- **Not verified:** the Mermaid diagram renders only on GitHub, and isn't checked until the branch is pushed. The Plaid bank-linking steps can't be followed end to end until the Dwolla integration is enabled (remaining issue 1).
 
 ## Remaining issues
 
