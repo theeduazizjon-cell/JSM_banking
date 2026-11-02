@@ -78,9 +78,11 @@ export const getOwnedBank = async ({ documentId, userId }: getOwnedBankProps): P
     [Query.equal('$id', [documentId])]
   )
 
-  const bank: Bank | undefined = parseStringify(banks.documents[0]);
+  if (banks.documents.length === 0) return null;
 
-  if (!bank || getBankOwnerId(bank) !== userId) return null;
+  const bank: Bank = parseStringify(banks.documents[0]);
+
+  if (getBankOwnerId(bank) !== userId) return null;
 
   return withDecryptedToken(bank);
 }

@@ -8,12 +8,12 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 | Phase | Status |
 |---|---|
 | 1. Audit | ✅ Done (2026-11-01) |
-| 2. Tools and agents | ✅ Built-in tools are enough; only dev test packages needed (approved, not yet installed) |
+| 2. Tools and agents | ✅ Built-in tools are enough; dev-only test packages installed in Phase 7 |
 | 3. Error fixing and security | ✅ Done; signed-in flows tested except bank linking and transfers (blocked by a Plaid dashboard setting) |
 | 4. UI/UX | 🟡 First pass done (theme tokens, accessibility, responsive fixes, empty states); screens with real bank data not yet reviewed |
 | 5. Banking features | 🟡 Search/filters, cash-flow analytics and Settings built; filters and analytics untested with real bank data |
 | 6. Architecture | 🟡 Partly done (data access layer introduced in Phase 3) |
-| 7. Testing | ⏳ Not started (no automated tests yet) |
+| 7. Testing | ✅ 114 unit/component tests and 18 end-to-end tests passing; bank linking and transfers covered only by mocked tests |
 | 8. Security audit | 🟡 Main issues fixed in Phase 3; full review pending |
 | 9. Documentation | ⏳ Not started (README still the create-next-app default) |
 | 10. Deployment | ⏳ Not started |
@@ -116,6 +116,40 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 - 14 checks of the filter and cash-flow logic with sample data (search, type, category, date range including ISO timestamps, ignoring malformed input, month bucketing, pending exclusion). Run as a script; they become unit tests in Phase 7.
 - Settings in the browser: a wrong current password shows "Your current password is incorrect."; a correct change shows "Password updated." and clears the fields. Appwrite then accepts the new password and rejects the old one (`.env.local` updated). No horizontal overflow at 375px.
 - Not verified in the browser: the filter form and cash-flow section. Both only render for an account with a linked bank.
+
+## Phase 7: Testing (2026-11-02)
+
+### Tools (dev-only, approved)
+- Vitest 4.1 (Vitest 5 needs `@types/node` 22+, and the project pins 20), jsdom, Testing Library (`@testing-library/react` plus its required peer `@testing-library/dom`), Playwright.
+- Vitest was installed with `--legacy-peer-deps` to get past an npm 10 resolver crash (`Cannot read properties of null (reading 'edgesOut')`) on Vitest's optional peers. Plain `npm install` and `npm ci` work afterwards.
+- Playwright drives the installed Google Chrome (`channel: "chrome"`), so no browser download is needed.
+- `npm audit` unchanged: 5 moderate in runtime packages, 25 including dev tools (none added by these packages).
+
+### Commands
+| Command | What it runs |
+|---|---|
+| `npm test` | Unit and component tests (Vitest, no network: Appwrite, Plaid and Dwolla are mocked) |
+| `npm run test:e2e` | End-to-end tests in Chrome against `next dev` (real Appwrite sandbox, needs `TEST_USER_EMAIL` / `TEST_USER_PASSWORD` in `.env.local`) |
+| `npm run typecheck` | `tsc --noEmit` |
+
+### What is covered
+- **Transaction logic** (`lib/transactions.ts`): URL filter parsing, search, type/category/date filters, cash-flow buckets, pending exclusion, rounding, year boundaries.
+- **Schemas and helpers** (`lib/utils.ts`): transfer amounts (format, zero, negative, over $5,000), shareable IDs, password change rules, sign-up/sign-in validation, date of birth.
+- **Token encryption**: round trip, random IV, tamper detection, wrong key, legacy plaintext, invalid keys.
+- **Plaid wrapper**: errors are replaced by safe errors with no `PLAID-SECRET`; user-facing messages.
+- **Data layer**: bank ownership (both relationship shapes), access token encrypted on write and decrypted on read, no Plaid call for someone else's bank, merging transfers with Plaid transactions, sync pagination and category mapping, session lookup.
+- **Server actions**: `transferFunds` (session, server-side validation, ownership, unknown/same account, Dwolla failure records nothing), sign-in cookie flags, sign-up never stores the SSN or password and cleans up on Dwolla failure, logout with an expired session, Plaid actions require a session, password change error mapping.
+- **Components**: ChangePasswordForm, CashFlowSummary, TransactionFilters, TransactionsTable, Pagination (keeps the bank and filters across pages).
+- **End to end**: every protected page redirects when signed out, forged cookie rejected, sign-in/sign-up validation, wrong password, sign-in, navigation and page titles, Settings profile, another user's bank ID, empty states, no private fields in the HTML, logout ends the session.
+- Two deliberate breakages (removing the bank ownership check, skipping server-side transfer validation) each made tests fail, so the tests do catch regressions.
+
+### Bug found by the tests
+- `getOwnedBank` and `getUserInfo` crashed on an empty Appwrite result (`parseStringify(undefined)`), so an unknown bank ID in the URL showed the error page instead of being treated as not found. Both now return null/undefined.
+
+### Not covered
+- Bank linking and real transfers end to end (blocked by remaining issue 1); they are covered only with mocks.
+- Sign-up end to end is not automated, because each run would create a real Dwolla sandbox customer.
+- Each e2e run creates 2 Appwrite sessions plus 1 failed attempt; Appwrite rate-limits sign-ins per email, so avoid running it many times in a row.
 
 ## Remaining issues
 

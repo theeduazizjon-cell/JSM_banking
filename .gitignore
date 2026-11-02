@@ -49,3 +49,9 @@ next-env.d.ts
 
 # Local data backups (may contain personal data)
 /.backups/
+
+# playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/playwright/.auth/

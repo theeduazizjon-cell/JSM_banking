@@ -20,6 +20,9 @@ export const getUserInfo = async ({ userId }: getUserInfoProps): Promise<User | 
     [Query.equal('userId', [userId])]
   )
 
+  // A login can exist without a profile document (e.g. an interrupted sign-up)
+  if (user.documents.length === 0) return undefined;
+
   return parseStringify(user.documents[0]);
 }
 
