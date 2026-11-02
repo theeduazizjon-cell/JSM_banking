@@ -9,11 +9,12 @@ const mocks = vi.hoisted(() => ({
   createTransfer: vi.fn(),
   createTransaction: vi.fn(),
   revalidatePath: vi.fn(),
+  DwollaRequestError: class DwollaRequestError extends Error {},
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 vi.mock("@/lib/data/user", () => ({ getCurrentUser: mocks.getCurrentUser }));
-vi.mock("@/lib/dwolla", () => ({ createTransfer: mocks.createTransfer }));
+vi.mock("@/lib/dwolla", () => ({ createTransfer: mocks.createTransfer, DwollaRequestError: mocks.DwollaRequestError }));
 vi.mock("@/lib/data/transaction", () => ({ createTransaction: mocks.createTransaction }));
 vi.mock("@/lib/data/bank", () => ({
   getOwnedBank: mocks.getOwnedBank,
@@ -34,7 +35,13 @@ const input: TransferFormValues = {
   sharableId: toShareableId("acc-b"),
 };
 
+// Each test starts in a fresh rate-limit window
+let clock = Date.parse("2026-01-01T00:00:00Z");
+
 beforeEach(() => {
+  clock += 2 * 60 * 60 * 1000;
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(clock);
   vi.spyOn(console, "error").mockImplementation(() => {});
   mocks.getCurrentUser.mockResolvedValue({ $id: "user-1" });
   mocks.getOwnedBank.mockResolvedValue(senderBank);
@@ -116,10 +123,44 @@ describe("transferFunds", () => {
   });
 
   it("reports a Dwolla rejection and records nothing", async () => {
-    mocks.createTransfer.mockRejectedValue(new Error("Dwolla rejected the transfer: Insufficient funds."));
+    mocks.createTransfer.mockRejectedValue(new mocks.DwollaRequestError("Dwolla rejected the transfer: Insufficient funds."));
 
     await expect(transferFunds(input)).resolves.toEqual({ ok: false, error: "Dwolla rejected the transfer: Insufficient funds." });
     expect(mocks.createTransaction).not.toHaveBeenCalled();
     expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("hides the details of unexpected errors", async () => {
+    mocks.getBankByAccountId.mockRejectedValue(new Error("Appwrite: Database not found (project abc123)"));
+
+    await expect(transferFunds(input)).resolves.toEqual({ ok: false, error: "The transfer could not be completed. Please try again." });
+  });
+
+  it("warns not to resend when the money moved but the record failed", async () => {
+    mocks.createTransaction.mockRejectedValue(new Error("Appwrite timeout"));
+
+    const result = await transferFunds(input);
+
+    expect(result).toEqual({ ok: false, error: "The transfer was sent, but it could not be added to your history yet. Please don't send it again." });
+    expect(console.error).toHaveBeenCalledWith("Transfer sent but not recorded:", "https://dwolla/transfers/t-1", "Appwrite timeout");
+    expect(mocks.revalidatePath).toHaveBeenCalled();
+  });
+
+  it("limits each user to 10 transfers an hour", async () => {
+    for (let i = 0; i < 10; i++) {
+      await expect(transferFunds(input)).resolves.toEqual({ ok: true });
+    }
+
+    await expect(transferFunds(input)).resolves.toEqual({ ok: false, error: expect.stringMatching(/^Too many attempts/) });
+    expect(mocks.createTransfer).toHaveBeenCalledTimes(10);
+
+    // Another user is not affected
+    mocks.getCurrentUser.mockResolvedValue({ $id: "user-3" });
+    await expect(transferFunds(input)).resolves.toEqual({ ok: true });
+
+    // The window resets after an hour
+    mocks.getCurrentUser.mockResolvedValue({ $id: "user-1" });
+    vi.setSystemTime(clock + 61 * 60 * 1000);
+    await expect(transferFunds(input)).resolves.toEqual({ ok: true });
   });
 });

@@ -12,7 +12,7 @@ vi.mock("@/lib/appwrite", () => ({ createAdminClient: async () => ({ database })
 vi.mock("@/lib/plaid", () => ({ plaidClient: plaid }));
 
 const { encryptSecret } = await import("@/lib/crypto");
-const { createBankAccount, getAccount, getBankOwnerId, getOwnedBank, getTransactions } = await import("@/lib/data/bank");
+const { createBankAccount, getAccount, getBankByAccountId, getBankOwnerId, getBanks, getOwnedBank, getTransactions } = await import("@/lib/data/bank");
 
 const bankDoc = (overrides: Partial<Bank> = {}): Bank => ({
   $id: "bank-1",
@@ -89,6 +89,26 @@ describe("getOwnedBank", () => {
     database.listDocuments.mockResolvedValueOnce({ total: 0, documents: [] });
 
     await expect(getOwnedBank({ documentId: "missing", userId: "user-1" })).resolves.toBeNull();
+  });
+});
+
+describe("unfinished bank records", () => {
+  // An interrupted Plaid link can leave a bank document with no token or
+  // funding source; these must not crash pages or receive transfers.
+  const unfinished = () => bankDoc({ $id: "bank-broken", accessToken: null as unknown as string, fundingSourceUrl: "" });
+
+  it("are left out of a user's banks", async () => {
+    database.listDocuments.mockResolvedValueOnce({ total: 2, documents: [unfinished(), bankDoc()] });
+
+    await expect(getBanks({ userId: "user-1" })).resolves.toEqual([expect.objectContaining({ $id: "bank-1" })]);
+  });
+
+  it("can't be used to send or receive", async () => {
+    database.listDocuments.mockResolvedValueOnce({ total: 1, documents: [unfinished()] });
+    await expect(getOwnedBank({ documentId: "bank-broken", userId: "user-1" })).resolves.toBeNull();
+
+    database.listDocuments.mockResolvedValueOnce({ total: 1, documents: [unfinished()] });
+    await expect(getBankByAccountId({ accountId: "plaid-account-1" })).resolves.toBeNull();
   });
 });
 

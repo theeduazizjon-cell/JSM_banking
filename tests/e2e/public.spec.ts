@@ -20,6 +20,21 @@ test.describe("signed out", () => {
     await expectSignedOut(page);
   });
 
+  test("the sign-in page runs under the CSP without violations", async ({ page }) => {
+    const violations: string[] = [];
+    page.on("console", (message) => {
+      if (/Content Security Policy|Refused to/i.test(message.text())) violations.push(message.text());
+    });
+
+    await page.goto("/sign-in");
+    await page.waitForLoadState("networkidle");
+    // Hydrated: the client-side validation works
+    await page.getByRole("button", { name: "Sign In" }).click();
+    await expect(page.locator(".form-message").first()).toBeVisible();
+
+    expect(violations).toEqual([]);
+  });
+
   test("sign-in validates before submitting", async ({ page }) => {
     await page.goto("/sign-in");
     const email = page.getByLabel("Email");

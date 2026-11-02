@@ -21,6 +21,10 @@ const {
 export const getBankOwnerId = (bank: Bank) =>
   typeof bank.userId === "string" ? bank.userId : bank.userId?.$id;
 
+// A bank document is only usable once linking finished: an interrupted link
+// can leave one without a token or Dwolla funding source.
+const isLinked = (bank: Bank) => Boolean(bank.accessToken && bank.fundingSourceUrl);
+
 // Bank documents with the Plaid access token decrypted. Never return these to
 // the client.
 const withDecryptedToken = (bank: Bank): Bank => ({
@@ -64,7 +68,9 @@ export const getBanks = async ({ userId }: getBanksProps): Promise<Bank[]> => {
     [Query.equal('userId', [userId])]
   )
 
-  return parseStringify(banks.documents).map(withDecryptedToken);
+  const documents: Bank[] = parseStringify(banks.documents);
+
+  return documents.filter(isLinked).map(withDecryptedToken);
 }
 
 // Returns the bank only if it belongs to `userId`, so a bank ID taken from the
@@ -82,7 +88,7 @@ export const getOwnedBank = async ({ documentId, userId }: getOwnedBankProps): P
 
   const bank: Bank = parseStringify(banks.documents[0]);
 
-  if (getBankOwnerId(bank) !== userId) return null;
+  if (getBankOwnerId(bank) !== userId || !isLinked(bank)) return null;
 
   return withDecryptedToken(bank);
 }
@@ -98,7 +104,9 @@ export const getBankByAccountId = async ({ accountId }: getBankByAccountIdProps)
 
   if(bank.total !== 1) return null;
 
-  return withDecryptedToken(parseStringify(bank.documents[0]));
+  const receiver: Bank = parseStringify(bank.documents[0]);
+
+  return isLinked(receiver) ? withDecryptedToken(receiver) : null;
 }
 
 // The Plaid account a bank document was linked to (an item can hold several)

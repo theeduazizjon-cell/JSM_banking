@@ -53,6 +53,8 @@ test("pages with no linked bank explain what to do", async ({ page }) => {
   // The sandbox test account has no linked bank while Plaid's Dwolla
   // integration is disabled; skip once one is linked.
   await page.goto("/my-banks");
+  // The page streams in behind the loading skeleton
+  await expect(page.getByRole("heading", { name: "Your accounts" })).toBeVisible();
   const empty = page.getByText(/No banks connected yet/);
   test.skip(!(await empty.isVisible()), "The test account has a linked bank");
 
@@ -67,4 +69,36 @@ test("no account details leak into the page payload", async ({ page }) => {
   for (const field of ["dwollaCustomerUrl", "dwollaCustomerId", "accessToken", "fundingSourceUrl", "ssn"]) {
     expect(html, `page HTML contains ${field}`).not.toContain(field);
   }
+});
+
+test("pages run under the Content Security Policy without violations", async ({ page }) => {
+  const violations: string[] = [];
+  page.on("console", (message) => {
+    if (/Content Security Policy|Refused to/i.test(message.text())) violations.push(message.text());
+  });
+  page.on("pageerror", (error) => violations.push(error.message));
+
+  const plaidScript = page.waitForResponse((response) => response.url().includes("cdn.plaid.com/link/"));
+
+  for (const path of ["/", "/my-banks", "/transaction-history", "/payment-transfer", "/settings"]) {
+    const response = await page.goto(path);
+    expect(response!.headers()["content-security-policy"]).toContain("'strict-dynamic'");
+    await page.waitForLoadState("networkidle");
+  }
+
+  // Plaid Link's loader is allowed by 'strict-dynamic'
+  expect((await plaidScript).ok()).toBe(true);
+  expect(violations).toEqual([]);
+});
+
+test("security headers are sent", async ({ request }) => {
+  const response = await request.get("/settings");
+  const headers = response.headers();
+
+  expect(headers["x-frame-options"]).toBe("DENY");
+  expect(headers["x-content-type-options"]).toBe("nosniff");
+  expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  expect(headers["strict-transport-security"]).toContain("max-age=");
+  expect(headers["x-powered-by"]).toBeUndefined();
+  expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
 });

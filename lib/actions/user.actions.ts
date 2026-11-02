@@ -4,17 +4,18 @@
 // with any arguments. Identity therefore always comes from the session cookie,
 // never from a parameter, and inputs are validated here as well as in the form.
 
-import { ID } from "node-appwrite";
+import { AppwriteException, ID } from "node-appwrite";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { CountryCode, ProcessorTokenCreateRequest, ProcessorTokenCreateRequestProcessorEnum, Products } from "plaid";
 
 import { createAdminClient, createSessionClient, SESSION_COOKIE } from "../appwrite";
-import { addFundingSource, createDwollaCustomer } from "../dwolla";
+import { addFundingSource, createDwollaCustomer, DwollaRequestError } from "../dwolla";
 import { getPlaidErrorMessage, plaidClient } from '../plaid';
 import { authFormSchema, changePasswordSchema, extractCustomerIdFromUrl, parseStringify, toShareableId } from "../utils";
 import { createBankAccount } from "../data/bank";
 import { getCurrentUser, toPublicUser } from "../data/user";
+import { createRateLimiter, getClientIp, tooManyAttempts } from "../rate-limit";
 
 const {
   APPWRITE_DATABASE_ID: DATABASE_ID,
@@ -28,13 +29,26 @@ const getErrorMessage = (error: unknown) => {
     return 'Appwrite is not configured. Add your project ID and API key to .env.local and restart the dev server.';
   }
 
-  if (error instanceof Error && error.message === 'Error creating Dwolla customer'
-    && (!process.env.DWOLLA_KEY || !process.env.DWOLLA_SECRET)) {
+  if (error instanceof DwollaRequestError && (!process.env.DWOLLA_KEY || !process.env.DWOLLA_SECRET)) {
     return 'Dwolla is not configured. Add DWOLLA_KEY and DWOLLA_SECRET to .env.local and restart the dev server.';
   }
 
-  return error instanceof Error ? error.message : 'Something went wrong. Please try again.';
+  // Appwrite's and Dwolla's own messages are written for end users; anything
+  // else (network failures, bugs) could expose internals.
+  if (error instanceof AppwriteException || error instanceof DwollaRequestError) return error.message;
+
+  return 'Something went wrong. Please try again.';
 }
+
+const FIFTEEN_MINUTES = 15 * 60 * 1000;
+
+// Failed sign-ins per email address, and all sign-in attempts per IP
+const signInFailures = createRateLimiter({ limit: 5, windowMs: FIFTEEN_MINUTES });
+const signInAttempts = createRateLimiter({ limit: 30, windowMs: FIFTEEN_MINUTES });
+// Each sign-up creates a Dwolla customer, so keep them rare per IP
+const signUpAttempts = createRateLimiter({ limit: 5, windowMs: 60 * 60 * 1000 });
+// Wrong current passwords per user
+const passwordFailures = createRateLimiter({ limit: 5, windowMs: FIFTEEN_MINUTES });
 
 const setSessionCookie = async (secret: string) => {
   (await cookies()).set(SESSION_COOKIE, secret, {
@@ -50,14 +64,25 @@ export const signIn = async ({ email, password }: signInProps): Promise<ActionRe
 
   if (!parsed.success) return { ok: false, error: 'Enter a valid email and a password of at least 8 characters.' };
 
+  const emailKey = email.trim().toLowerCase();
+  const ip = await getClientIp();
+  const limit = [signInFailures.check(emailKey), signInAttempts.check(ip)].find((l) => l.limited);
+
+  if (limit?.limited) return { ok: false, error: tooManyAttempts(limit.retryAfterSeconds) };
+
+  signInAttempts.hit(ip);
+
   try {
     const { account } = await createAdminClient();
     const session = await account.createEmailPasswordSession(email, password);
 
     await setSessionCookie(session.secret);
+    signInFailures.reset(emailKey);
 
     return { ok: true };
   } catch (error) {
+    // Only wrong passwords count towards the lockout, not outages
+    if (error instanceof AppwriteException && error.code === 401) signInFailures.hit(emailKey);
     console.error('Sign in failed:', error instanceof Error ? error.message : error);
     return { ok: false, error: getErrorMessage(error) };
   }
@@ -69,6 +94,13 @@ export const signUp = async (params: SignUpParams): Promise<ActionResult<PublicU
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? 'Please check your details and try again.' };
   }
+
+  const ip = await getClientIp();
+  const limit = signUpAttempts.check(ip);
+
+  if (limit.limited) return { ok: false, error: tooManyAttempts(limit.retryAfterSeconds) };
+
+  signUpAttempts.hit(ip);
 
   // The SSN is only forwarded to Dwolla for identity verification; it is never stored.
   const { password, ssn, ...profile } = params;
@@ -94,7 +126,7 @@ export const signUp = async (params: SignUpParams): Promise<ActionResult<PublicU
       type: 'personal'
     })
 
-    if(!dwollaCustomerUrl) throw new Error('Error creating Dwolla customer')
+    if(!dwollaCustomerUrl) throw new DwollaRequestError('Dwolla could not verify these details. Please check them and try again.')
 
     const dwollaCustomerId = extractCustomerIdFromUrl(dwollaCustomerUrl);
 
@@ -235,6 +267,14 @@ export const changePassword = async (input: ChangePasswordValues): Promise<Actio
     return { ok: false, error: parsed.error.issues[0]?.message ?? 'Please check the form.' };
   }
 
+  const user = await getCurrentUser();
+
+  if (!user) return { ok: false, error: 'Your session has expired. Please sign in again.' };
+
+  const limit = passwordFailures.check(user.$id);
+
+  if (limit.limited) return { ok: false, error: tooManyAttempts(limit.retryAfterSeconds) };
+
   try {
     // The session client acts as the signed-in user, and Appwrite checks the
     // old password itself before accepting the new one.
@@ -246,7 +286,10 @@ export const changePassword = async (input: ChangePasswordValues): Promise<Actio
     const type = (error as { type?: string })?.type;
     console.error('Password change failed:', type ?? (error instanceof Error ? error.message : error));
 
-    if (type === 'user_invalid_credentials') return { ok: false, error: 'Your current password is incorrect.' };
+    if (type === 'user_invalid_credentials') {
+      passwordFailures.hit(user.$id);
+      return { ok: false, error: 'Your current password is incorrect.' };
+    }
     if (type === 'user_password_recently_used') return { ok: false, error: 'Choose a password you have not used recently.' };
     if (error instanceof Error && error.message === 'No session') {
       return { ok: false, error: 'Your session has expired. Please sign in again.' };

@@ -14,7 +14,7 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 | 5. Banking features | 🟡 Search/filters, cash-flow analytics and Settings built; filters and analytics untested with real bank data |
 | 6. Architecture | 🟡 Partly done (data access layer introduced in Phase 3) |
 | 7. Testing | ✅ 114 unit/component tests and 18 end-to-end tests passing; bank linking and transfers covered only by mocked tests |
-| 8. Security audit | 🟡 Main issues fixed in Phase 3; full review pending |
+| 8. Security audit | ✅ Done (2026-11-02); 3 items need your decision (see Remaining issues 2, 3, 9) |
 | 9. Documentation | ⏳ Not started (README still the create-next-app default) |
 | 10. Deployment | ⏳ Not started |
 
@@ -151,16 +151,53 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 - Sign-up end to end is not automated, because each run would create a real Dwolla sandbox customer.
 - Each e2e run creates 2 Appwrite sessions plus 1 failed attempt; Appwrite rate-limits sign-ins per email, so avoid running it many times in a row.
 
+## Phase 8: Security audit (2026-11-02)
+
+### Checked
+| Area | Result |
+|---|---|
+| Secrets in git history (all 22+ commits, every branch) | ✅ No keys, passwords or tokens of yours. 4 hard-coded Plaid sandbox tokens from the tutorial's first commit belong to another Plaid account (Plaid rejects them for yours); removed from the code, history left as is |
+| `.env*` files | ✅ All ignored by git, never committed |
+| CSRF on server actions | ✅ Next.js rejects a forged `Origin` ("Invalid Server Actions request"); session cookie is `SameSite=Strict` |
+| Session cookie | ✅ `HttpOnly`, `Secure`, `SameSite=Strict` |
+| Authorization (IDOR) | ✅ Every bank lookup checks ownership (covered by unit and e2e tests since Phase 7) |
+| XSS sinks, open redirects | ✅ No `dangerouslySetInnerHTML`, `eval` or user-controlled redirects |
+| Appwrite collections | ✅ No public permissions; only the server's API key can read or write |
+| Data at rest | ✅ No plaintext Plaid tokens stored. One SSN value remains on the original account (remaining issue 2) |
+| Sentry | ✅ No user info, cookies, bodies or Plaid headers sent; Session Replay masks all text and media |
+
+### Found and fixed
+1. **No brute-force protection on sign-in (high).** Appwrite doesn't rate-limit requests made with an API key: 12 wrong passwords in a row all returned 401, never 429. Added in-memory rate limits (`lib/rate-limit.ts`):
+   - sign-in: 5 failed attempts per email per 15 minutes, 30 attempts per IP;
+   - sign-up: 5 per IP per hour;
+   - password change: 5 wrong current passwords per user per 15 minutes;
+   - transfers: 10 per user per hour.
+   Only real wrong-password responses count towards the email lockout, not outages.
+2. **No security headers (medium).** Added:
+   - a nonce-based Content Security Policy, set per request in `proxy.ts` as the Next.js 16 docs describe;
+   - HSTS, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy` and `Permissions-Policy`;
+   - removed `X-Powered-By`.
+   Every page now renders per request so it can carry the nonce. Plaid Link's loader is allowed through `'strict-dynamic'`. E2E tests fail on any CSP violation, in both dev and production builds.
+3. **Internal error details shown to users (low).** Transfers and auth returned any exception's message (for example a raw "fetch failed" or an Appwrite database error). Now only Appwrite's and Dwolla's own user-facing messages (`DwollaRequestError`) are shown; everything else gets a generic message.
+4. **Transfer sent but not recorded.** The user now gets "The transfer was sent… Please don't send it again." instead of an error that invites a retry, and the Dwolla transfer URL is logged.
+5. **Unfinished bank records crashed the dashboard.** Bank documents without a token or funding source are skipped, and can't send or receive.
+6. Removed the unused hard-coded Plaid tokens and IDs from `constants/index.ts`.
+
+### Tests
+- 133 unit/component tests (19 new: limits, lockout across IPs, reset after success, outages don't lock, safe errors, unfinished banks).
+- 21 e2e tests, passing against both `next dev` and `next start`, including CSP violations and response headers.
+
 ## Remaining issues
 
 1. **Bank linking blocked by Plaid configuration.** Plaid returns `INVALID_PRODUCT`: the API keys in `.env.local` are not enabled for the Dwolla integration. Enable it at https://dashboard.plaid.com/developers/integrations. Until then no bank can be linked, so transfers cannot be tested. Re-checked after the integration was reportedly enabled: a direct sandbox API call with client ID `…e109` (the only one in `.env` and `.env.local`) still returns `INVALID_PRODUCT`.
 2. **Appwrite `ssn` attribute** is now optional (changed by you in the console), and new users are created without it. The original account's SSN value is still stored. Delete the attribute to remove it. The backup in `.backups/` also contains that value; delete it when no longer needed.
-3. Existing Plaid tokens in the 2 bank documents are still plaintext (still readable; new links are encrypted). A one-off migration script can re-encrypt them.
-4. If Dwolla accepts a transfer but writing the Appwrite transaction record fails, the transfer is not shown in history. Needs reconciliation (e.g. look up the Dwolla transfer by URL).
+3. **The original account's 2 bank documents are unfinished**: they have no access token and no Dwolla funding source (an interrupted link). They are now ignored instead of crashing the dashboard. They can be deleted in the Appwrite console, or left as they are.
+4. If Dwolla accepts a transfer but writing the Appwrite transaction record fails, the user is now told not to resend it, and the Dwolla transfer URL is logged. The record still has to be added by hand. Transfers also have no idempotency key, so a request retried at the network level could send twice.
 5. Every page view re-syncs all Plaid transactions with no stored cursor. Slow with many transactions.
 6. `.env` contains `APPWRITE_SECRET`, which nothing reads (can be removed by hand).
-7. No automated tests yet.
-8. Unverified: whether the original account's 2 banks still load. If `.env.local`'s Plaid keys differ from the ones used to link them, their tokens will be rejected and the error screen will show.
+7. Rate limits live in each server instance's memory. That is enough for one server; on a multi-instance host (several serverless instances) they should move to a shared store such as Redis.
+8. `npm audit`: 5 moderate advisories in `glob`/`minimatch`, pulled in only by Sentry's build-time plugin. They are not reachable from the running app; the suggested fix is a breaking Sentry downgrade, so they are accepted for now.
+9. **Appwrite session length** is a project setting (default 1 year). For a banking app, shorten it in the Appwrite console under Auth → Security → Session length (for example 1 day).
 
 ## Tests performed
 

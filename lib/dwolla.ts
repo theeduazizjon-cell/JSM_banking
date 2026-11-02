@@ -46,6 +46,15 @@ const getDwollaClient = () => {
   return client;
 };
 
+// Dwolla's validation messages are meant for the end user; other failures
+// (network, configuration) are not, so only this error is shown in the UI.
+export class DwollaRequestError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "DwollaRequestError";
+  }
+}
+
 const getDwollaErrorDetails = (err: unknown) => {
   const body = (err as { body?: { message?: string; _embedded?: { errors?: { message: string }[] } } })?.body;
 
@@ -101,7 +110,7 @@ export const createDwollaCustomer = async (
     // Pass Dwolla's validation messages (e.g. invalid state or SSN) on to the sign-up form
     const details = getDwollaErrorDetails(err);
 
-    if (details) throw new Error(`Dwolla rejected these details: ${details}`);
+    if (details) throw new DwollaRequestError(`Dwolla rejected these details: ${details}`);
   }
 };
 
@@ -132,7 +141,7 @@ export const createTransfer = async ({
     console.error("Transfer fund failed: ", describeDwollaError(err));
 
     const details = getDwollaErrorDetails(err);
-    throw new Error(details ? `Dwolla rejected the transfer: ${details}` : "The transfer could not be created.");
+    throw new DwollaRequestError(details ? `Dwolla rejected the transfer: ${details}` : "The transfer could not be created.");
   }
 };
 
