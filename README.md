@@ -168,6 +168,8 @@ TEST_USER_PASSWORD=a-long-test-password
 
 Then run them. Playwright starts `npm run dev`, or reuses a server already on port 3000. Set `E2E_PORT` to use another port, for example a production build started with `npm start -- -p 3100`.
 
+To test a deployed site instead, set `E2E_BASE_URL` (for example `E2E_BASE_URL=https://your-app.vercel.app npm run test:e2e`). No local server is started then, and the test account must exist in the Appwrite project the site uses.
+
 ```bash
 npm run test:e2e
 ```

@@ -131,6 +131,10 @@ const AuthForm = ({ type }: { type: string }) => {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               {type === 'sign-up' && (
                 <>
+                  {/* The live demo is public: nobody should hand it real identity data */}
+                  <p role="note" className="text-14 rounded-lg border border-blue-100 bg-blue-25 px-4 py-3 text-blue-900">
+                    <strong className="font-semibold">This is a demo.</strong> Use made-up details. Don&apos;t enter your real address, date of birth or SSN.
+                  </p>
                   <div className="flex gap-4">
                     <CustomInput control={form.control} name='firstName' label="First Name" placeholder='Enter your first name' />
                     <CustomInput control={form.control} name='lastName' label="Last Name" placeholder='Enter your last name' />

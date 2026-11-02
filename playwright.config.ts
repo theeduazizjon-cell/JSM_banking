@@ -5,8 +5,11 @@ import { defineConfig } from "@playwright/test";
 // .env.local next to the app's other settings; see .env.example.
 if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 
+// E2E_BASE_URL tests an already deployed site (no local server is started);
+// otherwise a local dev server is used, on E2E_PORT if set.
 const PORT = Number(process.env.E2E_PORT ?? 3000);
-const baseURL = `http://localhost:${PORT}`;
+const remoteURL = process.env.E2E_BASE_URL?.replace(/\/$/, "");
+const baseURL = remoteURL ?? `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -40,7 +43,7 @@ export default defineConfig({
       use: { storageState: "playwright/.auth/user.json" },
     },
   ],
-  webServer: {
+  webServer: remoteURL ? undefined : {
     command: `npm run dev -- --port ${PORT}`,
     url: `${baseURL}/sign-in`,
     reuseExistingServer: !process.env.CI,

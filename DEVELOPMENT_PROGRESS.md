@@ -16,7 +16,7 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
 | 7. Testing | ✅ 114 unit/component tests and 18 end-to-end tests passing; bank linking and transfers covered only by mocked tests |
 | 8. Security audit | ✅ Done (2026-11-02); 3 items need your decision (see Remaining issues 2, 3, 9) |
 | 9. Documentation | ✅ Done (2026-11-02): README rewritten, `.env.example` matches the code |
-| 10. Deployment | ⏳ Not started |
+| 10. Deployment | 🟡 Prepared (2026-11-02): code ready, `develop` pushed for review; Vercel project not yet created |
 
 ## Fixed in Phase 3
 
@@ -202,6 +202,22 @@ Backup of the pre-work state: git tag `backup/pre-phase3`.
   - A fresh clone with only `.env.example` copied to `.env.local` runs `npm ci`, `npm run typecheck`, `npm test` (133 passed) and `npm run build`.
   - Every README anchor and referenced file exists, and the UI labels the README mentions (Connect bank, shareable ID on My Banks) match the app.
 - **Not verified:** the Mermaid diagram renders only on GitHub, and isn't checked until the branch is pushed. The Plaid bank-linking steps can't be followed end to end until the Dwolla integration is enabled (remaining issue 1).
+
+## Phase 10: Deployment (in progress)
+
+**Plan (approved 2026-11-02):** Vercel Hobby, with the existing Appwrite Cloud project as the database, and the Plaid and Dwolla sandboxes. Expected cost: $0. No custom domain.
+
+### Done
+- **License:** merged GitHub's initial commit on `master` (the MIT `LICENSE`) into `develop`, so `develop` can merge into `master` cleanly. The README keeps the `develop` version and has a License section.
+- **Testing a deployed site:** `E2E_BASE_URL` points the Playwright tests at a deployed site.
+- **Sign-up notice:** "This is a demo. Use made-up details…", so public visitors don't enter real identity data.
+- **Checks:** 133 unit tests, 21 e2e tests, type check, lint and the production build all pass.
+
+### Remaining (in order)
+1. Merge the pull request from `develop` into `master` (yours to review and merge).
+2. Import the repo on Vercel. Add the Production environment variables from `.env.example`, using the same values as `.env.local`, including the same `ENCRYPTION_KEY`. Leave out `TEST_USER_*`.
+3. Enable Plaid's Dwolla integration (remaining issue 1). Until then the live site can't link banks or make transfers.
+4. Run `E2E_BASE_URL=<live URL> npm run test:e2e`, then add the live link to the README.
 
 ## Remaining issues
 

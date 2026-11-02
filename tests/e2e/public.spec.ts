@@ -62,6 +62,7 @@ test.describe("signed out", () => {
 
   test("sign-up checks the details in the browser", async ({ page }) => {
     await page.goto("/sign-up");
+    await expect(page.getByRole("note")).toContainText("Use made-up details");
     await page.getByLabel("Date of Birth").fill("2999-01-01");
     await page.getByRole("button", { name: "Sign Up" }).click();
 
